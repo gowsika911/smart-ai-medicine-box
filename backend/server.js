@@ -1,5 +1,6 @@
 require('dotenv').config();
 const medicineRoutes = require('./routes/medicineRoutes');
+const authRoutes = require('./routes/authRoutes');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,6 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/api/medicines', medicineRoutes);
+app.use('/api/auth', authRoutes);
 
 // Test route
 app.get('/', (req, res) => {

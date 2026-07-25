@@ -24,7 +24,7 @@ const medicineSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: false, // will make required once auth (User model) is built
+      required: true, // will make required once auth (User model) is built
     },
   },
   {
