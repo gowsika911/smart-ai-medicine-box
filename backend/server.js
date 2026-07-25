@@ -1,4 +1,5 @@
 require('dotenv').config();
+const Medicine = require('./models/Medicine');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
