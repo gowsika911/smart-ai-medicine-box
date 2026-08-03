@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Day 6 - Color Range Comparison</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+  }
+  .camera-container {
+    width: 400px;
+    height: 300px;
+    border: 3px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+  }
+  .camera-container video { width: 100%; height: 100%; object-fit: cover; }
+  canvas { margin-top: 20px; border: 3px solid #333; border-radius: 12px; }
+  button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2980b9;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover { background: #1f618d; }
+  .color-box {
+    margin-top: 16px;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #333;
+    border-radius: 8px;
+  }
+  .result {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+  .match { color: green; }
+  .no-match { color: #c0392b; }
+</style>
+</head>
+<body>
+  <h2>Medicine Box - Color Match Check</h2>
+
+  <div class="camera-container">
+    <video id="video" autoplay playsinline></video>
+  </div>
+
+  <button id="captureBtn">Capture</button>
+
+  <canvas id="canvas" width="400" height="300"></canvas>
+
+  <p id="colorText"></p>
+  <div id="colorBox" class="color-box"></div>
+  <p id="resultText" class="result"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureBtn = document.getElementById('captureBtn');
+    const colorText = document.getElementById('colorText');
+    const colorBox = document.getElementById('colorBox');
+    const resultText = document.getElementById('resultText');
+
+    // Example expected range for a "red" medicine — adjust these later
+    const expectedMin = { r: 150, g: 0,  b: 0 };
+    const expectedMax = { r: 255, g: 80, b: 80 };
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert('Camera error: ' + err.message);
+      }
+    }
+
+    function getAverageColor(canvas) {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      let rTotal = 0, gTotal = 0, bTotal = 0;
+      const pixelCount = data.length / 4;
+
+      for (let i = 0; i < data.length; i += 4) {
+        rTotal += data[i];
+        gTotal += data[i + 1];
+        bTotal += data[i + 2];
+      }
+
+      return {
+        r: Math.round(rTotal / pixelCount),
+        g: Math.round(gTotal / pixelCount),
+        b: Math.round(bTotal / pixelCount),
+      };
+    }
+
+    // ---- Day 6: Color range comparison function ----
+    function isColorInRange(color, min, max) {
+      const rMatch = color.r >= min.r && color.r <= max.r;
+      const gMatch = color.g >= min.g && color.g <= max.g;
+      const bMatch = color.b >= min.b && color.b <= max.b;
+
+      return rMatch && gMatch && bMatch;
+    }
+
+    captureBtn.addEventListener('click', () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const avgColor = getAverageColor(canvas);
+      colorText.textContent = `Average Color: rgb(${avgColor.r}, ${avgColor.g}, ${avgColor.b})`;
+      colorBox.style.backgroundColor = `rgb(${avgColor.r}, ${avgColor.g}, ${avgColor.b})`;
+
+      const matches = isColorInRange(avgColor, expectedMin, expectedMax);
+
+      if (matches) {
+        resultText.textContent = 'Match ✅ - Correct medicine color detected';
+        resultText.className = 'result match';
+      } else {
+        resultText.textContent = 'No Match ❌ - Color does not match expected range';
+        resultText.className = 'result no-match';
+      }
+    });
+
+    startCamera();
+  </script>
+</body>
+</html>
