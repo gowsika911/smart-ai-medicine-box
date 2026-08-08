@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Day 9 - Brightness Normalization</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 30px;
+  }
+  .camera-container {
+    width: 400px;
+    height: 300px;
+    border: 3px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+  }
+  .camera-container video { width: 100%; height: 100%; object-fit: cover; }
+  canvas { display: none; }
+  button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2980b9;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover { background: #1f618d; }
+  .readings {
+    margin-top: 20px;
+    display: flex;
+    gap: 30px;
+  }
+  .reading-box {
+    text-align: center;
+  }
+  .swatch {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    border: 2px solid #333;
+    margin: 0 auto 8px auto;
+  }
+  .result { margin-top: 16px; font-size: 18px; font-weight: bold; }
+  .match { color: green; }
+  .no-match { color: #c0392b; }
+</style>
+</head>
+<body>
+  <h2>Medicine Box - Lighting-Safe Color Check</h2>
+
+  <div class="camera-container">
+    <video id="video" autoplay playsinline></video>
+  </div>
+
+  <button id="captureBtn">Capture</button>
+
+  <canvas id="canvas" width="400" height="300"></canvas>
+
+  <div class="readings">
+    <div class="reading-box">
+      <div id="rawSwatch" class="swatch"></div>
+      <p>Raw</p>
+      <p id="rawText"></p>
+    </div>
+    <div class="reading-box">
+      <div id="normSwatch" class="swatch"></div>
+      <p>Normalized</p>
+      <p id="normText"></p>
+    </div>
+  </div>
+
+  <p id="resultText" class="result"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const captureBtn = document.getElementById('captureBtn');
+    const rawSwatch = document.getElementById('rawSwatch');
+    const rawText = document.getElementById('rawText');
+    const normSwatch = document.getElementById('normSwatch');
+    const normText = document.getElementById('normText');
+    const resultText = document.getElementById('resultText');
+
+    // Expected range now written in NORMALIZED terms (target brightness = 150)
+    const expectedMin = { r: 170, g: 20, b: 20 };
+    const expectedMax = { r: 255, g: 90, b: 90 };
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert('Camera error: ' + err.message);
+      }
+    }
+
+    function getAverageColor(canvas) {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      let rTotal = 0, gTotal = 0, bTotal = 0;
+      const pixelCount = data.length / 4;
+
+      for (let i = 0; i < data.length; i += 4) {
+        rTotal += data[i];
+        gTotal += data[i + 1];
+        bTotal += data[i + 2];
+      }
+
+      return {
+        r: Math.round(rTotal / pixelCount),
+        g: Math.round(gTotal / pixelCount),
+        b: Math.round(bTotal / pixelCount),
+      };
+    }
+
+    // ---- Day 9: Brightness normalization ----
+    function normalizeColor(color, targetBrightness = 150) {
+      const currentBrightness = (color.r + color.g + color.b) / 3;
+
+      // Avoid divide-by-zero on a fully black frame
+      if (currentBrightness === 0) return { r: 0, g: 0, b: 0 };
+
+      const scale = targetBrightness / currentBrightness;
+
+      return {
+        r: Math.min(255, Math.round(color.r * scale)),
+        g: Math.min(255, Math.round(color.g * scale)),
+        b: Math.min(255, Math.round(color.b * scale)),
+      };
+    }
+
+    function isColorInRange(color, min, max) {
+      return (
+        color.r >= min.r && color.r <= max.r &&
+        color.g >= min.g && color.g <= max.g &&
+        color.b >= min.b && color.b <= max.b
+      );
+    }
+
+    captureBtn.addEventListener('click', () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const rawColor = getAverageColor(canvas);
+      const normColor = normalizeColor(rawColor);
+
+      rawText.textContent = `rgb(${rawColor.r}, ${rawColor.g}, ${rawColor.b})`;
+      rawSwatch.style.backgroundColor = `rgb(${rawColor.r}, ${rawColor.g}, ${rawColor.b})`;
+
+      normText.textContent = `rgb(${normColor.r}, ${normColor.g}, ${normColor.b})`;
+      normSwatch.style.backgroundColor = `rgb(${normColor.r}, ${normColor.g}, ${normColor.b})`;
+
+      const matches = isColorInRange(normColor, expectedMin, expectedMax);
+
+      if (matches) {
+        resultText.textContent = 'Match ✅ - Correct medicine color detected';
+        resultText.className = 'result match';
+      } else {
+        resultText.textContent = 'No Match ❌ - Color does not match expected range';
+        resultText.className = 'result no-match';
+      }
+    });
+
+    startCamera();
+  </script>
+</body>
+</html>
