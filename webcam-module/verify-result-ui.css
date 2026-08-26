@@ -1,0 +1,30 @@
+/* Smart AI Medicine Box - Verification Result Styling
+   Day 10 - Indhumithra (Webcam Module)
+   Add this inside a <style> tag in webcam-test.html, or link as a separate CSS file. */
+
+.result-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-weight: bold;
+  max-width: 480px;
+}
+
+.result-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #2e7d32;
+}
+
+.result-fail {
+  background: #fdecea;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+}
+
+.result-icon {
+  font-size: 22px;
+}
