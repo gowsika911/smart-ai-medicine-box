@@ -1,53 +1,104 @@
 /**
- * Smart AI Medicine Box - Pill Verification
- * Day 9 - Indhumithra (Webcam Module)
+ * Smart AI Medicine Box - Pill Verification (with Edge Case Handling)
+ * Day 13 - Indhumithra (Webcam Module)
  *
- * Combines color-comparison and shape-detection into a single
- * verifyPill() function used to confirm the correct pill was taken.
+ * This REPLACES your Day 9 verifyPill.js file.
+ * It now returns a status object instead of just true/false,
+ * so you can show more helpful messages to the user.
  *
- * Requires: color-compare.js (Day 6) and shape-detection.js (Day 8)
- * to be loaded on the page BEFORE this file.
+ * Requires: color-compare.js, shape-detection.js loaded before this file.
  */
 
 /**
- * Verifies a captured pill image against expected color and shape.
+ * Checks if the captured image is too dark to analyze reliably.
+ * @param {HTMLCanvasElement} canvas
+ * @returns {boolean} true if image is too dark
+ */
+function isImageTooDark(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  let totalBrightness = 0;
+  const pixelCount = width * height;
+
+  for (let i = 0; i < pixelCount; i++) {
+    const r = data[i * 4];
+    const g = data[i * 4 + 1];
+    const b = data[i * 4 + 2];
+    totalBrightness += (r + g + b) / 3;
+  }
+
+  const avgBrightness = totalBrightness / pixelCount;
+
+  // If average brightness is very low, the room/frame is too dark
+  return avgBrightness < 40;
+}
+
+/**
+ * Verifies a captured pill image, handling edge cases first.
  *
- * @param {HTMLCanvasElement} capturedImage - Canvas with the captured pill frame.
- * @param {Object} expectedColor - { min: {r,g,b}, max: {r,g,b} } acceptable RGB range.
+ * @param {HTMLCanvasElement} capturedImage
+ * @param {Object} expectedColor - { min: {r,g,b}, max: {r,g,b} }
  * @param {string} expectedShape - "circle" | "oval" | "irregular"
- * @returns {boolean} true if both color and shape match, false otherwise.
+ * @returns {Object} { status: string, matched: boolean, message: string }
+ *
+ * Possible status values:
+ *   "too-dark"          - image too dark to analyze
+ *   "no-object"         - no pill detected in frame
+ *   "match"             - pill verified successfully
+ *   "mismatch"          - pill does not match expected color/shape
  */
 function verifyPill(capturedImage, expectedColor, expectedShape) {
-  // Step 1: Get the average color of the captured image
-  // (getAverageColor comes from your Day 5 color-detection code)
-  const avgColor = getAverageColor(capturedImage);
+  // Edge case 1: Check lighting first
+  if (isImageTooDark(capturedImage)) {
+    return {
+      status: 'too-dark',
+      matched: false,
+      message: 'Image is too dark. Please improve lighting and try again.'
+    };
+  }
 
-  // Step 2: Check if that color falls within the expected range
-  // (compareColor comes from your Day 6 color-compare code)
+  // Edge case 2: Check if any object was detected at all
+  const detectedShape = detectShape(capturedImage);
+  if (detectedShape === 'no-object-detected') {
+    return {
+      status: 'no-object',
+      matched: false,
+      message: 'No pill detected in frame. Please place the pill clearly in view.'
+    };
+  }
+
+  // Normal verification: color check
+  const avgColor = getAverageColor(capturedImage);
   const colorMatch = compareColor(avgColor, expectedColor.min, expectedColor.max);
 
-  // Step 3: Detect the shape of the object in the image
-  // (detectShape comes from your Day 8 shape-detection code)
-  const detectedShape = detectShape(capturedImage);
-
-  // Step 4: Check if detected shape matches the expected shape
+  // Normal verification: shape check
   const shapeMatch = detectedShape === expectedShape;
 
-  // Step 5: Log results for easier debugging while testing
-  console.log('Verification result:', {
-    avgColor,
-    colorMatch,
-    detectedShape,
-    shapeMatch
-  });
+  if (colorMatch && shapeMatch) {
+    return {
+      status: 'match',
+      matched: true,
+      message: 'Pill verified successfully.'
+    };
+  }
 
-  // Step 6: Final result — both color AND shape must match
-  return colorMatch && shapeMatch;
+  return {
+    status: 'mismatch',
+    matched: false,
+    message: 'Pill does not match expected color or shape. Please check and try again.'
+  };
 }
 
 // Example usage:
-// const canvas = document.getElementById('captureCanvas');
-// const expectedColor = { min: {r:200,g:200,b:200}, max: {r:255,g:255,b:255} };
-// const expectedShape = 'circle';
-// const isCorrectPill = verifyPill(canvas, expectedColor, expectedShape);
-// console.log('Is correct pill?', isCorrectPill);
+//
+// const result = verifyPill(canvas, expectedColor, expectedShape);
+// console.log(result.status, result.message);
+//
+// showVerificationResult(result.matched, result.message);
+//
+// if (result.matched) {
+//   logDoseTaken("PUT_ACTUAL_MEDICINE_ID_HERE");
+// }
