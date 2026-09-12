@@ -1,0 +1,49 @@
+/* ============================================
+   Day 12 - Add Retry Button to Camera Errors
+   Indhumithra (Webcam Module)
+   ============================================
+
+   You already have error handling from Day 3 (the showError function
+   inside webcam-test.html). This file shows exactly what to CHANGE
+   to add a "Try Again" button.
+
+   Find this part in your webcam-test.html <script> section:
+*/
+
+// ---- STEP 1: Replace your existing showError function with this one ----
+function showError(message) {
+  errorBox.innerHTML = `
+    <p>${message}</p>
+    <button id="retryBtn" class="retry-btn">Try Again</button>
+  `;
+  errorBox.style.display = 'block';
+  statusText.textContent = '';
+
+  // Attach click event to the new retry button
+  document.getElementById('retryBtn').addEventListener('click', () => {
+    errorBox.style.display = 'none';
+    startWebcam();
+  });
+}
+
+/* ---- STEP 2: Add this CSS to your <style> section in webcam-test.html ---- */
+
+/*
+.retry-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.retry-btn:hover {
+  background: #b71c1c;
+}
+*/
+
+/* That's it! No other changes needed - your startWebcam() function
+   from Day 3 already handles re-requesting camera access when called. */

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Day 1 - Basic Webcam Access</title>
+</head>
+<body>
+  <h2>Webcam Test</h2>
+  <video id="video" autoplay playsinline></video>
+
+  <script>
+    const video = document.getElementById('video');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => {
+        video.srcObject = stream;
+      })
+      .catch((err) => {
+        console.error('Camera access error:', err);
+        alert('Could not access camera: ' + err.message);
+      });
+  </script>
+</body>
+</html>

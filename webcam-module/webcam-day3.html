@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Day 3 - Styled Webcam Feed</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+  }
+
+  .camera-container {
+    width: 400px;
+    height: 300px;
+    border: 3px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .camera-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .error-message {
+    color: #c0392b;
+    margin-top: 12px;
+    font-weight: bold;
+    max-width: 400px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <h2>Medicine Box - Camera Feed</h2>
+
+  <div class="camera-container">
+    <video id="video" autoplay playsinline></video>
+  </div>
+
+  <p id="errorMsg" class="error-message"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const errorMsg = document.getElementById('errorMsg');
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error('Camera access error:', err);
+
+        if (err.name === 'NotAllowedError') {
+          errorMsg.textContent = 'Camera permission denied. Please allow camera access.';
+        } else if (err.name === 'NotFoundError') {
+          errorMsg.textContent = 'No camera found on this device.';
+        } else {
+          errorMsg.textContent = 'Camera error: ' + err.message;
+        }
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
