@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import axiosInstance from '../api/axiosInstance';
 
 function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const validate = () => {
     const newErrors = {};
@@ -16,18 +19,40 @@ function Signup() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     setErrors(newErrors);
-    if (Object.keys(newErrors).length === 0) {
-      console.log('Signup submitted:', { name, email, password });
+    setApiError('');
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post('/auth/signup', {
+        name,
+        email,
+        password,
+      });
+
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      alert('Signup successful! Welcome ' + user.name);
+      // TODO: redirect to dashboard once routing is added
+    } catch (err) {
+      const message = err.response?.data?.error || 'Signup failed. Try again.';
+      setApiError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <h2>Sign Up</h2>
+      {apiError && <p className="error-text">{apiError}</p>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Name</label>
@@ -62,7 +87,9 @@ function Signup() {
           {errors.password && <p className="error-text">{errors.password}</p>}
         </div>
 
-        <button type="submit">Sign Up</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Signing up...' : 'Sign Up'}
+        </button>
       </form>
     </div>
   );

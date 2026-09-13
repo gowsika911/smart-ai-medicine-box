@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import axiosInstance from '../api/axiosInstance';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const validate = () => {
     const newErrors = {};
@@ -13,18 +16,39 @@ function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     setErrors(newErrors);
-    if (Object.keys(newErrors).length === 0) {
-      console.log('Login submitted:', { email, password });
+    setApiError('');
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post('/auth/login', {
+        email,
+        password,
+      });
+
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      alert('Login successful! Welcome back ' + user.name);
+      // TODO: redirect to dashboard once routing is added
+    } catch (err) {
+      const message = err.response?.data?.error || 'Login failed. Check your credentials.';
+      setApiError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <h2>Login</h2>
+      {apiError && <p className="error-text">{apiError}</p>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Email</label>
@@ -48,7 +72,9 @@ function Login() {
           {errors.password && <p className="error-text">{errors.password}</p>}
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
     </div>
   );
