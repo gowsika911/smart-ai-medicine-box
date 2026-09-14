@@ -7,7 +7,6 @@ const axiosInstance = axios.create({
   },
 });
 
-// Attach JWT token to every request automatically, if user is logged in
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {

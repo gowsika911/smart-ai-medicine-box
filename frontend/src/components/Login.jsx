@@ -1,7 +1,12 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -26,56 +31,61 @@ function Login() {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post('/auth/login', {
-        email,
-        password,
-      });
-
+      const response = await axiosInstance.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      alert('Login successful! Welcome back ' + user.name);
-      // TODO: redirect to dashboard once routing is added
+      login(token, user);
+      navigate('/dashboard');
     } catch (err) {
-      const message = err.response?.data?.error || 'Login failed. Check your credentials.';
-      setApiError(message);
+      setApiError(err.response?.data?.error || 'Login failed. Check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <h2>Login</h2>
-      {apiError && <p className="error-text">{apiError}</p>}
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Email</label>
+    <div className="auth-form-wrap">
+      <div className="auth-form-header">
+        <h2>Welcome back</h2>
+        <p>Log in to see today's doses and compliance score.</p>
+      </div>
+
+      {apiError && <div className="alert-banner">{apiError}</div>}
+
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="field-group">
+          <label htmlFor="login-email">Email</label>
           <input
+            id="login-email"
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder="you@example.com"
+            autoComplete="email"
           />
-          {errors.email && <p className="error-text">{errors.email}</p>}
+          {errors.email && <p className="field-error">{errors.email}</p>}
         </div>
 
-        <div className="form-group">
-          <label>Password</label>
+        <div className="field-group">
+          <label htmlFor="login-password">Password</label>
           <input
+            id="login-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
+            autoComplete="current-password"
           />
-          {errors.password && <p className="error-text">{errors.password}</p>}
+          {errors.password && <p className="field-error">{errors.password}</p>}
         </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+        <button type="submit" className="btn-primary btn-block" disabled={loading}>
+          {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
+
+      <p className="auth-switch">
+        New to MedBox? <Link to="/signup">Create an account</Link>
+      </p>
     </div>
   );
 }

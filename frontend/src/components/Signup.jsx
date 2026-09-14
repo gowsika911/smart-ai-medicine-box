@@ -1,7 +1,12 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
 
 function Signup() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,68 +34,74 @@ function Signup() {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post('/auth/signup', {
-        name,
-        email,
-        password,
-      });
-
+      const response = await axiosInstance.post('/auth/signup', { name, email, password });
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      alert('Signup successful! Welcome ' + user.name);
-      // TODO: redirect to dashboard once routing is added
+      login(token, user);
+      navigate('/dashboard');
     } catch (err) {
-      const message = err.response?.data?.error || 'Signup failed. Try again.';
-      setApiError(message);
+      setApiError(err.response?.data?.error || 'Signup failed. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <h2>Sign Up</h2>
-      {apiError && <p className="error-text">{apiError}</p>}
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Name</label>
+    <div className="auth-form-wrap">
+      <div className="auth-form-header">
+        <h2>Create your account</h2>
+        <p>Set up MedBox to track doses and compliance for your family.</p>
+      </div>
+
+      {apiError && <div className="alert-banner">{apiError}</div>}
+
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="field-group">
+          <label htmlFor="signup-name">Name</label>
           <input
+            id="signup-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder="Your full name"
+            autoComplete="name"
           />
-          {errors.name && <p className="error-text">{errors.name}</p>}
+          {errors.name && <p className="field-error">{errors.name}</p>}
         </div>
 
-        <div className="form-group">
-          <label>Email</label>
+        <div className="field-group">
+          <label htmlFor="signup-email">Email</label>
           <input
+            id="signup-email"
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder="you@example.com"
+            autoComplete="email"
           />
-          {errors.email && <p className="error-text">{errors.email}</p>}
+          {errors.email && <p className="field-error">{errors.email}</p>}
         </div>
 
-        <div className="form-group">
-          <label>Password</label>
+        <div className="field-group">
+          <label htmlFor="signup-password">Password</label>
           <input
+            id="signup-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a password"
+            placeholder="At least 6 characters"
+            autoComplete="new-password"
           />
-          {errors.password && <p className="error-text">{errors.password}</p>}
+          {errors.password && <p className="field-error">{errors.password}</p>}
         </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Signing up...' : 'Sign Up'}
+        <button type="submit" className="btn-primary btn-block" disabled={loading}>
+          {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
+
+      <p className="auth-switch">
+        Already have an account? <Link to="/login">Log in</Link>
+      </p>
     </div>
   );
 }

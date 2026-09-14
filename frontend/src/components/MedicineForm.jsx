@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 
 function MedicineForm() {
+  const navigate = useNavigate();
+
   const [medicineName, setMedicineName] = useState('');
   const [doseTime, setDoseTime] = useState('');
   const [compartmentNumber, setCompartmentNumber] = useState('');
@@ -27,66 +30,69 @@ function MedicineForm() {
         compartmentNumber: Number(compartmentNumber),
       });
 
-      setSuccessMsg('Medicine added successfully!');
-      setMedicineName('');
-      setDoseTime('');
-      setCompartmentNumber('');
+      setSuccessMsg('Medicine added successfully.');
+      setTimeout(() => navigate('/dashboard'), 700);
     } catch (err) {
-      if (err.response?.status === 401) {
-        setApiError('Please login first to add a medicine.');
-      } else {
-        setApiError(err.response?.data?.error || 'Failed to add medicine.');
-      }
+      setApiError(err.response?.data?.error || 'Failed to add medicine.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="form-container">
-      <h2>Add New Medicine</h2>
-
-      {apiError && <p className="error-text">{apiError}</p>}
-      {successMsg && <p className="success-text">{successMsg}</p>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Medicine Name</label>
-          <input
-            type="text"
-            value={medicineName}
-            onChange={(e) => setMedicineName(e.target.value)}
-            placeholder="e.g. Metformin"
-            required
-          />
+    <div className="form-page">
+      <header className="page-header">
+        <div>
+          <h1>Add a medicine</h1>
+          <p className="page-subtitle">Assign it to a compartment and set the daily dose time.</p>
         </div>
+      </header>
 
-        <div className="form-group">
-          <label>Dose Time</label>
-          <input
-            type="time"
-            value={doseTime}
-            onChange={(e) => setDoseTime(e.target.value)}
-            required
-          />
-        </div>
+      <div className="card-panel form-panel">
+        {apiError && <div className="alert-banner">{apiError}</div>}
+        {successMsg && <div className="alert-banner alert-success">{successMsg}</div>}
 
-        <div className="form-group">
-          <label>Compartment Number</label>
-          <input
-            type="number"
-            value={compartmentNumber}
-            onChange={(e) => setCompartmentNumber(e.target.value)}
-            placeholder="e.g. 1"
-            min="1"
-            required
-          />
-        </div>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="field-group">
+            <label htmlFor="med-name">Medicine name</label>
+            <input
+              id="med-name"
+              type="text"
+              value={medicineName}
+              onChange={(e) => setMedicineName(e.target.value)}
+              placeholder="e.g. Metformin 500mg"
+            />
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Adding...' : 'Add Medicine'}
-        </button>
-      </form>
+          <div className="field-row">
+            <div className="field-group">
+              <label htmlFor="med-time">Dose time</label>
+              <input
+                id="med-time"
+                type="time"
+                value={doseTime}
+                onChange={(e) => setDoseTime(e.target.value)}
+              />
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="med-compartment">Compartment number</label>
+              <input
+                id="med-compartment"
+                type="number"
+                min="1"
+                value={compartmentNumber}
+                onChange={(e) => setCompartmentNumber(e.target.value)}
+                placeholder="e.g. 1"
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Adding...' : 'Add medicine'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

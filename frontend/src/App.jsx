@@ -1,27 +1,46 @@
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthLayout from './components/AuthLayout';
+import AppLayout from './components/AppLayout';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 import MedicineForm from './components/MedicineForm';
+import WebcamCapture from './components/WebcamCapture';
+import Alerts from './components/Alerts';
 import './App.css';
 
+function RootRedirect() {
+  const { isAuthenticated } = useAuth();
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+}
+
 function App() {
-  const [page, setPage] = useState('login');
-
   return (
-    <div className="app">
-      <nav className="navbar">
-        <button onClick={() => setPage('login')}>Login</button>
-        <button onClick={() => setPage('signup')}>Signup</button>
-        <button onClick={() => setPage('dashboard')}>Dashboard</button>
-        <button onClick={() => setPage('form')}>Add Medicine</button>
-      </nav>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
 
-      {page === 'login' && <Login />}
-      {page === 'signup' && <Signup />}
-      {page === 'dashboard' && <Dashboard />}
-      {page === 'form' && <MedicineForm />}
-    </div>
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/medicines/new" element={<MedicineForm />} />
+              <Route path="/verify" element={<WebcamCapture />} />
+              <Route path="/alerts" element={<Alerts />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

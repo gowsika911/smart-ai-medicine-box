@@ -1,34 +1,78 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
+
+function ComplianceRing({ score, riskLevel }) {
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const [offset, setOffset] = useState(circumference);
+
+  useEffect(() => {
+    const filled = circumference - (score / 100) * circumference;
+    const timer = setTimeout(() => setOffset(filled), 80);
+    return () => clearTimeout(timer);
+  }, [score, circumference]);
+
+  const ringColor =
+    riskLevel === 'Low' ? 'var(--color-success)' :
+    riskLevel === 'Medium' ? 'var(--color-warning)' :
+    'var(--color-danger)';
+
+  return (
+    <div className="compliance-ring">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r={radius} className="ring-track" />
+        <circle
+          cx="70"
+          cy="70"
+          r={radius}
+          className="ring-progress"
+          style={{
+            stroke: ringColor,
+            strokeDasharray: circumference,
+            strokeDashoffset: offset,
+          }}
+        />
+      </svg>
+      <div className="compliance-ring-label">
+        <span className="compliance-score">{score}</span>
+        <span className="compliance-max">out of 100</span>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
+  const { user } = useAuth();
   const [medicines, setMedicines] = useState([]);
+  const [compliance, setCompliance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchMedicines();
+    loadDashboard();
   }, []);
 
-  const fetchMedicines = async () => {
+  const loadDashboard = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axiosInstance.get('/medicines');
-      setMedicines(response.data);
+      const [medRes, compRes] = await Promise.all([
+        axiosInstance.get('/medicines'),
+        axiosInstance.get('/compliance'),
+      ]);
+      setMedicines(medRes.data);
+      setCompliance(compRes.data);
     } catch (err) {
-      if (err.response?.status === 401) {
-        setError('Please login first to view your medicines.');
-      } else {
-        setError(err.response?.data?.error || 'Failed to load medicines.');
-      }
+      setError(err.response?.data?.error || 'Failed to load dashboard.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this medicine?')) return;
+    if (!window.confirm('Remove this medicine?')) return;
     try {
       await axiosInstance.delete(`/medicines/${id}`);
       setMedicines((prev) => prev.filter((med) => med._id !== id));
@@ -37,39 +81,95 @@ function Dashboard() {
     }
   };
 
-  const getStatusClass = (status) => {
+  const statusClass = (status) => {
     if (status === 'taken') return 'status-taken';
-    if (status === 'missed' || status === 'mismatched') return 'status-due';
-    return 'status-upcoming';
+    if (status === 'missed' || status === 'mismatched') return 'status-missed';
+    return 'status-pending';
   };
 
-  if (loading) return <div className="dashboard-container"><p>Loading medicines...</p></div>;
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <div className="spinner" />
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-container">
-      <h2>Today's Medicines</h2>
+    <div className="dashboard-page">
+      <header className="page-header">
+        <div>
+          <h1>{greeting()}, {user?.name || 'there'}</h1>
+          <p className="page-subtitle">Here's how today's dosage schedule is tracking.</p>
+        </div>
+        <Link to="/medicines/new" className="btn-primary">+ Add medicine</Link>
+      </header>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && <div className="alert-banner">{error}</div>}
 
-      {!error && medicines.length === 0 && (
-        <p>No medicines added yet. Go to "Add Medicine" to create one.</p>
+      {compliance && (
+        <section className="compliance-panel">
+          <ComplianceRing score={compliance.score} riskLevel={compliance.riskLevel} />
+          <div className="compliance-details">
+            <div className="risk-pill" data-risk={compliance.riskLevel}>
+              {compliance.riskLevel} risk
+            </div>
+            <div className="compliance-stats">
+              <div className="stat-tile">
+                <span className="stat-value">{compliance.totalDoses}</span>
+                <span className="stat-label">Total doses</span>
+              </div>
+              <div className="stat-tile">
+                <span className="stat-value">{compliance.takenCount}</span>
+                <span className="stat-label">Taken</span>
+              </div>
+              <div className="stat-tile">
+                <span className="stat-value">{compliance.missedCount}</span>
+                <span className="stat-label">Missed</span>
+              </div>
+              <div className="stat-tile">
+                <span className="stat-value">{compliance.avgDelayMinutes}m</span>
+                <span className="stat-label">Avg delay</span>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
-      <div className="medicine-cards">
-        {medicines.map((med) => (
-          <div className="medicine-card" key={med._id}>
-            <h3>{med.medicineName}</h3>
-            <p>Time: {med.doseTime}</p>
-            <p>Compartment: {med.compartmentNumber}</p>
-            <span className={`status-badge ${getStatusClass(med.status)}`}>
-              {med.status}
-            </span>
-            <button onClick={() => handleDelete(med._id)} className="delete-btn">
-              Delete
-            </button>
+      <section className="medicines-section">
+        <h2>Today's medicines</h2>
+
+        {medicines.length === 0 && (
+          <div className="empty-state">
+            <p>No medicines added yet.</p>
+            <Link to="/medicines/new" className="btn-secondary">Add your first medicine</Link>
           </div>
-        ))}
-      </div>
+        )}
+
+        <div className="medicine-grid">
+          {medicines.map((med) => (
+            <div className="medicine-card" key={med._id} data-status={med.status}>
+              <div className="medicine-card-top">
+                <span className="compartment-badge">{med.compartmentNumber}</span>
+                <span className={`status-pill ${statusClass(med.status)}`}>{med.status}</span>
+              </div>
+              <h3>{med.medicineName}</h3>
+              <p className="medicine-time">Scheduled {med.doseTime}</p>
+              <button className="card-delete" onClick={() => handleDelete(med._id)}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
