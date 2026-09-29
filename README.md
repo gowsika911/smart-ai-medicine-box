@@ -1,16 +1,24 @@
-# React + Vite
+# Smart AI Medicine Box 💊🤖
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An intelligent healthcare assistant built on the MERN stack integrated with real-time computer vision for pill verification and adherence monitoring.
 
-Currently, two official plugins are available:
+## 🚀 Features
+- **User Authentication:** Secure JWT-based signup and login system.
+- **Medicine Management:** CRUD schedule tracking for daily prescribed medications.
+- **Webcam Computer Vision:** Image canvas analysis verifying pill shape and color before logging doses.
+- **Adherence & Compliance:** Real-time calculation of adherence scores and risk levels.
+- **Caregiver Alerts:** Automatic logging and display of missed, delayed, or mismatched pill doses.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack
+- **Frontend:** React.js, Vite, HTML5 Canvas API, Axios, CSS3
+- **Backend:** Node.js, Express.js
+- **Database:** MongoDB
+- **Authentication:** JSON Web Tokens (JWT) & bcrypt
 
-## React Compiler
+## ⚙️ Installation & Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Backend Setup
+```bash
+cd backend
+npm install
+npm run dev
