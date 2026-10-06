@@ -7,6 +7,7 @@ const cors = require('cors');
 const doseLogRoutes = require('./routes/doseLogRoutes');
 const complianceRoutes = require('./routes/complianceRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const { startScheduler } = require('./utils/scheduler');
 
 const app = express();
 
@@ -26,7 +27,10 @@ app.get('/', (req, res) => {
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
+  .then(() => {
+    console.log('MongoDB connected');
+    startScheduler();
+  })
   .catch((err) => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;

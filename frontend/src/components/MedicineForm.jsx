@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import TimePicker from './TimePicker';
+
+const TOTAL_COMPARTMENTS = 8;
 
 function MedicineForm() {
   const navigate = useNavigate();
 
   const [medicineName, setMedicineName] = useState('');
-  const [doseTime, setDoseTime] = useState('');
-  const [compartmentNumber, setCompartmentNumber] = useState('');
+  const [doseTime, setDoseTime] = useState('08:00');
+  const [compartmentNumber, setCompartmentNumber] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -18,7 +21,7 @@ function MedicineForm() {
     setSuccessMsg('');
 
     if (!medicineName || !doseTime || !compartmentNumber) {
-      setApiError('All fields are required.');
+      setApiError('Please fill in the name, time, and select a compartment.');
       return;
     }
 
@@ -27,7 +30,7 @@ function MedicineForm() {
       await axiosInstance.post('/medicines', {
         medicineName,
         doseTime,
-        compartmentNumber: Number(compartmentNumber),
+        compartmentNumber,
       });
 
       setSuccessMsg('Medicine added successfully.');
@@ -44,47 +47,54 @@ function MedicineForm() {
       <header className="page-header">
         <div>
           <h1>Add a medicine</h1>
-          <p className="page-subtitle">Assign it to a compartment and set the daily dose time.</p>
+          <p className="page-subtitle">
+            Set the name, the time it should be taken, and which box slot it's loaded in.
+          </p>
         </div>
       </header>
 
-      <div className="card-panel form-panel">
+      <div className="card-panel form-panel-wide">
         {apiError && <div className="alert-banner">{apiError}</div>}
         {successMsg && <div className="alert-banner alert-success">{successMsg}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
-          <div className="field-group">
-            <label htmlFor="med-name">Medicine name</label>
-            <input
-              id="med-name"
-              type="text"
-              value={medicineName}
-              onChange={(e) => setMedicineName(e.target.value)}
-              placeholder="e.g. Metformin 500mg"
-            />
-          </div>
-
           <div className="field-row">
             <div className="field-group">
-              <label htmlFor="med-time">Dose time</label>
+              <label htmlFor="med-name">Medicine name</label>
               <input
-                id="med-time"
-                type="time"
-                value={doseTime}
-                onChange={(e) => setDoseTime(e.target.value)}
+                id="med-name"
+                type="text"
+                value={medicineName}
+                onChange={(e) => setMedicineName(e.target.value)}
+                placeholder="e.g. Metformin 500mg"
               />
             </div>
 
             <div className="field-group">
-              <label htmlFor="med-compartment">Compartment number</label>
-              <input
-                id="med-compartment"
-                type="number"
-                min="1"
-                value={compartmentNumber}
-                onChange={(e) => setCompartmentNumber(e.target.value)}
-                placeholder="e.g. 1"
-              />
+              <label htmlFor="med-time">Dose time</label>
+              <TimePicker id="med-time" value={doseTime} onChange={setDoseTime} />
+            </div>
+          </div>
+
+          <div className="compartment-picker-block">
+            <label>Which compartment is it loaded in?</label>
+            <p className="compartment-hint">
+              This is the numbered slot in the physical medicine box. At dose time, that
+              slot is what unlocks — so your loved one just opens the one shown, without
+              needing to remember which pill goes when.
+            </p>
+
+            <div className="compartment-grid">
+              {Array.from({ length: TOTAL_COMPARTMENTS }, (_, i) => i + 1).map((num) => (
+                <button
+                  type="button"
+                  key={num}
+                  className={`compartment-tile ${compartmentNumber === num ? 'compartment-tile-selected' : ''}`}
+                  onClick={() => setCompartmentNumber(num)}
+                >
+                  {num}
+                </button>
+              ))}
             </div>
           </div>
 

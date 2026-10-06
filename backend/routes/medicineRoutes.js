@@ -6,6 +6,10 @@ const protect = require('../middleware/authMiddleware');
 // All routes below require login
 router.use(protect);
 
+function todayString() {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
 // POST /api/medicines - create a new medicine entry (linked to logged-in user)
 router.post('/', async (req, res) => {
   try {
@@ -20,6 +24,7 @@ router.post('/', async (req, res) => {
       doseTime,
       compartmentNumber,
       userId: req.user.id,
+      lastResetDate: todayString(),
     });
     res.status(201).json(medicine);
   } catch (err) {

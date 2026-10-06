@@ -23,12 +23,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Merges partial profile updates (age, doctorName, prescriptionNotes, etc.)
+  // into the current user and persists them, without needing a full re-login.
+  const updateUser = (partialUser) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...partialUser };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const value = {
     user,
     token,
     isAuthenticated: !!token,
     login,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

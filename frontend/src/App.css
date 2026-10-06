@@ -593,3 +593,156 @@ button {
   .ring-progress { transition: none; }
   .spinner { animation: none; }
 }
+/* ===== Add these to the end of App.css ===== */
+
+.form-panel-wide { max-width: 640px; }
+
+.compartment-picker-block {
+  margin: 22px 0 26px;
+}
+.compartment-picker-block > label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.compartment-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.compartment-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  max-width: 340px;
+}
+
+.compartment-tile {
+  aspect-ratio: 1;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  transition: all 0.15s ease;
+}
+.compartment-tile:hover {
+  border-color: var(--color-brand-light);
+  color: var(--color-brand);
+}
+.compartment-tile-selected {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: white;
+}
+/* ===== Add these to the end of App.css ===== */
+
+/* Optional-field tag used in Signup */
+.field-optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+/* Textarea (Profile page prescription notes) */
+.field-group textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  background: var(--color-surface);
+  color: var(--color-text);
+  resize: vertical;
+}
+.field-group textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-light);
+}
+.field-group input:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+/* ===== TimePicker ===== */
+.time-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.time-picker select {
+  padding: 12px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.time-picker select:focus {
+  outline: none;
+  border-color: var(--color-brand-light);
+}
+.time-picker-colon {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.time-picker-period {
+  font-weight: 600;
+}
+
+/* ===== Reminder banner (dose-time alert) ===== */
+.reminder-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+}
+
+.reminder-banner {
+  background: var(--color-surface);
+  border-left: 5px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: 0 8px 24px rgba(22, 38, 30, 0.18);
+  animation: reminder-slide-in 0.25s ease;
+}
+@keyframes reminder-slide-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.reminder-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+.reminder-text strong { font-size: 0.98rem; color: var(--color-text); }
+.reminder-text span { font-size: 0.82rem; color: var(--color-text-muted); }
+
+.reminder-actions {
+  display: flex;
+  gap: 8px;
+}
+.reminder-actions .btn-primary,
+.reminder-actions .btn-secondary {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 500px) {
+  .reminder-stack { left: 12px; right: 12px; max-width: none; top: 12px; }
+}

@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import MedicineForm from './components/MedicineForm';
 import WebcamCapture from './components/WebcamCapture';
 import Alerts from './components/Alerts';
+import Profile from './components/Profile';
 import './App.css';
 
 function RootRedirect() {
@@ -34,6 +35,7 @@ function App() {
               <Route path="/medicines/new" element={<MedicineForm />} />
               <Route path="/verify" element={<WebcamCapture />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 

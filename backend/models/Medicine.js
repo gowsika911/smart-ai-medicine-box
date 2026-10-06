@@ -21,6 +21,13 @@ const medicineSchema = new mongoose.Schema(
       enum: ['pending', 'taken', 'missed', 'mismatched'],
       default: 'pending',
     },
+    // Tracks which calendar day (YYYY-MM-DD) the current `status` belongs to.
+    // The scheduler uses this to reset status back to "pending" each new day
+    // and to know whether today's dose has already been dealt with.
+    lastResetDate: {
+      type: String,
+      default: null,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

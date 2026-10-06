@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ReminderWatcher from './ReminderWatcher';
 
 function AppLayout() {
   const { user, logout } = useAuth();
@@ -16,6 +17,8 @@ function AppLayout() {
 
   return (
     <div className="app-shell">
+      <ReminderWatcher />
+
       <aside className="sidebar">
         <div className="sidebar-brand">
           <span className="sidebar-brand-dot" />
@@ -38,6 +41,10 @@ function AppLayout() {
           <NavLink to="/alerts" className="sidebar-link">
             <IconBell />
             Alerts
+          </NavLink>
+          <NavLink to="/profile" className="sidebar-link">
+            <IconUser />
+            Profile
           </NavLink>
         </nav>
 
@@ -99,6 +106,15 @@ function IconBell() {
         strokeLinejoin="round"
       />
       <path d="M7.5 14.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconUser() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3 15c0-2.8 2.7-5 6-5s6 2.2 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

@@ -24,6 +24,19 @@ const userSchema = new mongoose.Schema(
       enum: ['caregiver', 'patient'],
       default: 'caregiver',
     },
+    age: {
+      type: Number,
+      min: 0,
+      max: 130,
+    },
+    doctorName: {
+      type: String,
+      trim: true,
+    },
+    prescriptionNotes: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

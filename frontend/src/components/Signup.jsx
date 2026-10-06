@@ -10,6 +10,8 @@ function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [age, setAge] = useState('');
+  const [doctorName, setDoctorName] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -34,7 +36,13 @@ function Signup() {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post('/auth/signup', { name, email, password });
+      const response = await axiosInstance.post('/auth/signup', {
+        name,
+        email,
+        password,
+        age: age === '' ? undefined : Number(age),
+        doctorName: doctorName || undefined,
+      });
       const { token, user } = response.data;
       login(token, user);
       navigate('/dashboard');
@@ -92,6 +100,31 @@ function Signup() {
             autoComplete="new-password"
           />
           {errors.password && <p className="field-error">{errors.password}</p>}
+        </div>
+
+        <div className="field-row">
+          <div className="field-group">
+            <label htmlFor="signup-age">Age <span className="field-optional">(optional)</span></label>
+            <input
+              id="signup-age"
+              type="number"
+              min="0"
+              max="130"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="e.g. 68"
+            />
+          </div>
+          <div className="field-group">
+            <label htmlFor="signup-doctor">Doctor's name <span className="field-optional">(optional)</span></label>
+            <input
+              id="signup-doctor"
+              type="text"
+              value={doctorName}
+              onChange={(e) => setDoctorName(e.target.value)}
+              placeholder="e.g. Dr. Ramesh Kumar"
+            />
+          </div>
         </div>
 
         <button type="submit" className="btn-primary btn-block" disabled={loading}>
