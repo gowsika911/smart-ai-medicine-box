@@ -3,6 +3,7 @@ const router = express.Router();
 const DoseLog = require('../models/DoseLog');
 const Medicine = require('../models/Medicine');
 const protect = require('../middleware/authMiddleware');
+const { localDateString } = require('../utils/dateUtils');
 
 router.use(protect);
 
@@ -13,6 +14,10 @@ router.post('/', async (req, res) => {
 
     if (!medicineId || !status) {
       return res.status(400).json({ error: 'medicineId and status are required' });
+    }
+
+    if (!['taken', 'mismatched'].includes(status)) {
+      return res.status(400).json({ error: 'status must be "taken" or "mismatched"' });
     }
 
     const medicine = await Medicine.findOne({ _id: medicineId, userId: req.user.id });
@@ -26,7 +31,12 @@ router.post('/', async (req, res) => {
     const scheduled = new Date(now);
     scheduled.setHours(schedHour, schedMin, 0, 0);
 
-    const delayMinutes = status === 'taken'
+    // Duplicate detection: today's dose was already taken and the user verifies again.
+    const alreadyTakenToday =
+      medicine.status === 'taken' && medicine.lastResetDate === localDateString(now);
+    const finalStatus = status === 'taken' && alreadyTakenToday ? 'duplicate' : status;
+
+    const delayMinutes = finalStatus === 'taken'
       ? Math.max(0, Math.round((now - scheduled) / 60000))
       : 0;
 
@@ -35,13 +45,15 @@ router.post('/', async (req, res) => {
       userId: req.user.id,
       scheduledTime: medicine.doseTime,
       actualTime: now,
-      status,
+      status: finalStatus,
       delayMinutes,
     });
 
-    // Update medicine's current status too
-    medicine.status = status;
-    await medicine.save();
+    // Update medicine's current status (a duplicate leaves today's "taken" as is)
+    if (finalStatus !== 'duplicate') {
+      medicine.status = finalStatus;
+      await medicine.save();
+    }
 
     res.status(201).json(log);
   } catch (err) {

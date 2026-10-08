@@ -1,4 +1,9 @@
 require('dotenv').config();
+
+// Render runs on UTC. Dose times are entered in the patient's local time, so force
+// the server clock to the same timezone (override with the TZ env var if needed).
+process.env.TZ = process.env.TZ || 'Asia/Kolkata';
+
 const medicineRoutes = require('./routes/medicineRoutes');
 const authRoutes = require('./routes/authRoutes');
 const express = require('express');
@@ -12,7 +17,13 @@ const { startScheduler } = require('./utils/scheduler');
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS: set CORS_ORIGIN in Render to your Vercel URL (comma-separated for several).
+// If it is not set, all origins are allowed so nothing breaks.
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : undefined));
 app.use(express.json());
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/auth', authRoutes);
@@ -21,6 +32,8 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/alerts', alertRoutes);
 
 // Test route
+app.get('/health', (req, res) => res.json({ ok: true }));
+
 app.get('/', (req, res) => {
   res.json({ message: 'Smart AI Medicine Box API is running' });
 });

@@ -5,12 +5,24 @@ import TimePicker from './TimePicker';
 
 const TOTAL_COMPARTMENTS = 8;
 
+const PILL_COLORS = [
+  { value: 'white', label: 'White', css: '#f5f5f5' },
+  { value: 'red', label: 'Red', css: '#d32f2f' },
+  { value: 'orange', label: 'Orange', css: '#f57c00' },
+  { value: 'yellow', label: 'Yellow', css: '#fbc02d' },
+  { value: 'green', label: 'Green', css: '#388e3c' },
+  { value: 'blue', label: 'Blue', css: '#1976d2' },
+  { value: 'pink', label: 'Pink', css: '#f48fb1' },
+];
+
 function MedicineForm() {
   const navigate = useNavigate();
 
   const [medicineName, setMedicineName] = useState('');
   const [doseTime, setDoseTime] = useState('08:00');
   const [compartmentNumber, setCompartmentNumber] = useState(null);
+  const [pillColor, setPillColor] = useState('white');
+  const [pillShape, setPillShape] = useState('circle');
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -31,6 +43,8 @@ function MedicineForm() {
         medicineName,
         doseTime,
         compartmentNumber,
+        pillColor,
+        pillShape,
       });
 
       setSuccessMsg('Medicine added successfully.');
@@ -75,6 +89,28 @@ function MedicineForm() {
               <TimePicker id="med-time" value={doseTime} onChange={setDoseTime} />
             </div>
           </div>
+
+          <div className="field-row">
+            <div className="field-group">
+              <label htmlFor="pill-color">Pill color</label>
+              <select id="pill-color" value={pillColor} onChange={(e) => setPillColor(e.target.value)}>
+                {PILL_COLORS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="pill-shape">Pill shape</label>
+              <select id="pill-shape" value={pillShape} onChange={(e) => setPillShape(e.target.value)}>
+                <option value="circle">Round (circle)</option>
+                <option value="oval">Oval / capsule</option>
+              </select>
+            </div>
+          </div>
+          <p className="compartment-hint">
+            The webcam check compares the pill you show against this color and shape.
+          </p>
 
           <div className="compartment-picker-block">
             <label>Which compartment is it loaded in?</label>

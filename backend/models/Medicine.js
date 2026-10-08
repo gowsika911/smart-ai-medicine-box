@@ -16,6 +16,17 @@ const medicineSchema = new mongoose.Schema(
       required: [true, 'Compartment number is required'],
       min: 1,
     },
+    // What the pill looks like - used by the webcam check to verify the right pill.
+    pillColor: {
+      type: String,
+      enum: ['red', 'orange', 'yellow', 'green', 'blue', 'pink', 'white'],
+      default: 'white',
+    },
+    pillShape: {
+      type: String,
+      enum: ['circle', 'oval'],
+      default: 'circle',
+    },
     status: {
       type: String,
       enum: ['pending', 'taken', 'missed', 'mismatched'],

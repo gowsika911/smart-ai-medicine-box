@@ -2,18 +2,19 @@ const express = require('express');
 const router = express.Router();
 const Medicine = require('../models/Medicine');
 const protect = require('../middleware/authMiddleware');
+const { localDateString } = require('../utils/dateUtils');
 
 // All routes below require login
 router.use(protect);
 
 function todayString() {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return localDateString(); // "YYYY-MM-DD" in local time
 }
 
 // POST /api/medicines - create a new medicine entry (linked to logged-in user)
 router.post('/', async (req, res) => {
   try {
-    const { medicineName, doseTime, compartmentNumber } = req.body;
+    const { medicineName, doseTime, compartmentNumber, pillColor, pillShape } = req.body;
 
     if (!medicineName || !doseTime || !compartmentNumber) {
       return res.status(400).json({ error: 'medicineName, doseTime, and compartmentNumber are required' });
@@ -23,6 +24,8 @@ router.post('/', async (req, res) => {
       medicineName,
       doseTime,
       compartmentNumber,
+      pillColor,
+      pillShape,
       userId: req.user.id,
       lastResetDate: todayString(),
     });
@@ -58,9 +61,16 @@ router.get('/:id', async (req, res) => {
 // PUT /api/medicines/:id - update medicine (only if it belongs to user)
 router.put('/:id', async (req, res) => {
   try {
+    // Only allow these fields to be edited (prevents changing userId etc.)
+    const allowed = ['medicineName', 'doseTime', 'compartmentNumber', 'pillColor', 'pillShape'];
+    const changes = {};
+    allowed.forEach((key) => {
+      if (req.body[key] !== undefined) changes[key] = req.body[key];
+    });
+
     const updated = await Medicine.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
-      req.body,
+      changes,
       { new: true, runValidators: true }
     );
     if (!updated) {

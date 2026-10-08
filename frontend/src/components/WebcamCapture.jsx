@@ -1,44 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
 
-const EXPECTED_COLOR_MIN = { r: 150, g: 0, b: 0 };
-const EXPECTED_COLOR_MAX = { r: 255, g: 80, b: 80 };
-const EXPECTED_SHAPE = 'circle';
+const MIN_OBJECT_PIXELS = 150;
 
-function getAverageColor(canvas) {
+function getImageData(canvas) {
   const ctx = canvas.getContext('2d');
-  const { width, height } = canvas;
-  const data = ctx.getImageData(0, 0, width, height).data;
-
-  let rTotal = 0, gTotal = 0, bTotal = 0;
-  const pixelCount = data.length / 4;
-
-  for (let i = 0; i < data.length; i += 4) {
-    rTotal += data[i];
-    gTotal += data[i + 1];
-    bTotal += data[i + 2];
-  }
-
-  return {
-    r: Math.round(rTotal / pixelCount),
-    g: Math.round(gTotal / pixelCount),
-    b: Math.round(bTotal / pixelCount),
-  };
+  return ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 }
 
-function isColorInRange(color, min, max) {
-  return (
-    color.r >= min.r && color.r <= max.r &&
-    color.g >= min.g && color.g <= max.g &&
-    color.b >= min.b && color.b <= max.b
-  );
-}
-
-function isImageTooDark(canvas) {
-  const ctx = canvas.getContext('2d');
-  const { width, height } = canvas;
-  const data = ctx.getImageData(0, 0, width, height).data;
-
+function isImageTooDark(data, width, height) {
   let total = 0;
   const pixelCount = width * height;
   for (let i = 0; i < pixelCount; i++) {
@@ -47,43 +17,90 @@ function isImageTooDark(canvas) {
   return total / pixelCount < 40;
 }
 
-function detectShape(canvas) {
-  const ctx = canvas.getContext('2d');
-  const { width, height } = canvas;
-  const data = ctx.getImageData(0, 0, width, height).data;
-
-  const threshold = 100;
-  const mask = new Uint8Array(width * height);
-
-  for (let i = 0; i < width * height; i++) {
-    const brightness = (data[i * 4] + data[i * 4 + 1] + data[i * 4 + 2]) / 3;
-    mask[i] = brightness > threshold ? 1 : 0;
+// Estimate the background colour from the image border (pill is placed in the middle).
+function estimateBackground(data, width, height) {
+  let r = 0, g = 0, b = 0, n = 0;
+  const margin = 10;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (x < margin || x >= width - margin || y < margin || y >= height - margin) {
+        const i = (y * width + x) * 4;
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+      }
+    }
   }
+  return { r: r / n, g: g / n, b: b / n };
+}
 
-  let minX = width, maxX = 0, minY = height, maxY = 0, pixelCount = 0;
+// Separate the pill from the background: any pixel clearly different from the
+// background counts as "object". Works for light AND dark pills.
+function segmentObject(data, width, height) {
+  const bg = estimateBackground(data, width, height);
+  const mask = new Uint8Array(width * height);
+  let minX = width, maxX = 0, minY = height, maxY = 0;
+  let count = 0, rSum = 0, gSum = 0, bSum = 0;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (mask[y * width + x] === 1) {
+      const i = (y * width + x) * 4;
+      const dist = Math.abs(data[i] - bg.r) + Math.abs(data[i + 1] - bg.g) + Math.abs(data[i + 2] - bg.b);
+      if (dist > 90) {
+        mask[y * width + x] = 1;
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
-        pixelCount++;
+        count++;
+        rSum += data[i]; gSum += data[i + 1]; bSum += data[i + 2];
       }
     }
   }
 
-  if (pixelCount < 50) return 'no-object-detected';
+  if (count < MIN_OBJECT_PIXELS) return null;
 
-  const boxWidth = maxX - minX + 1;
-  const boxHeight = maxY - minY + 1;
-  const fillRatio = pixelCount / (boxWidth * boxHeight);
-  const aspectRatio = boxWidth / boxHeight;
+  return {
+    pixelCount: count,
+    boxWidth: maxX - minX + 1,
+    boxHeight: maxY - minY + 1,
+    avgColor: { r: rSum / count, g: gSum / count, b: bSum / count },
+  };
+}
 
-  if (fillRatio > 0.75 && aspectRatio > 0.85 && aspectRatio < 1.15) return 'circle';
-  if (fillRatio > 0.6 && (aspectRatio <= 0.85 || aspectRatio >= 1.15)) return 'oval';
-  return 'irregular';
+function detectShape(obj) {
+  const fillRatio = obj.pixelCount / (obj.boxWidth * obj.boxHeight);
+  const aspectRatio = obj.boxWidth / obj.boxHeight;
+  // A filled circle covers ~78% of its bounding box; a rectangle/capsule more.
+  const longSide = Math.max(aspectRatio, 1 / aspectRatio);
+
+  if (fillRatio < 0.55) return 'irregular';
+  if (longSide < 1.2) return 'circle';
+  return 'oval';
+}
+
+// Convert an RGB average to one of our named pill colours.
+function classifyColor({ r, g, b }) {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+
+  if (s < 0.2 && l > 0.6) return 'white';
+
+  let h;
+  if (d === 0) h = 0;
+  else if (max === rn) h = ((gn - bn) / d) % 6;
+  else if (max === gn) h = (bn - rn) / d + 2;
+  else h = (rn - gn) / d + 4;
+  h = (h * 60 + 360) % 360;
+
+  if (h >= 330 || h < 15) return l > 0.68 ? 'pink' : 'red';
+  if (h < 40) return 'orange';
+  if (h < 70) return 'yellow';
+  if (h < 170) return 'green';
+  if (h < 260) return 'blue';
+  return 'pink';
 }
 
 function WebcamCapture() {
@@ -100,8 +117,9 @@ function WebcamCapture() {
   useEffect(() => {
     startCamera();
     fetchMedicines();
+    const videoElement = videoRef.current;
     return () => {
-      const stream = videoRef.current?.srcObject;
+      const stream = videoElement?.srcObject;
       if (stream) stream.getTracks().forEach((track) => track.stop());
     };
   }, []);
@@ -133,31 +151,41 @@ function WebcamCapture() {
       return;
     }
 
+    const medicine = medicines.find((m) => m._id === selectedMedicineId);
+    const expectedColor = medicine?.pillColor || 'white';
+    const expectedShape = medicine?.pillShape || 'circle';
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     setLogMessage('');
 
-    if (isImageTooDark(canvas)) {
+    const data = getImageData(canvas);
+
+    if (isImageTooDark(data, canvas.width, canvas.height)) {
       setResult({ matched: false, message: 'Image is too dark. Improve lighting and try again.' });
       return;
     }
 
-    const detectedShape = detectShape(canvas);
-    if (detectedShape === 'no-object-detected') {
-      setResult({ matched: false, message: 'No pill detected. Place the pill clearly in view.' });
+    const obj = segmentObject(data, canvas.width, canvas.height);
+    if (!obj) {
+      setResult({ matched: false, message: 'No pill detected. Place the pill clearly in view on a plain background.' });
       return;
     }
 
-    const avgColor = getAverageColor(canvas);
-    const colorMatch = isColorInRange(avgColor, EXPECTED_COLOR_MIN, EXPECTED_COLOR_MAX);
-    const shapeMatch = detectedShape === EXPECTED_SHAPE;
+    const detectedShape = detectShape(obj);
+    const detectedColor = classifyColor(obj.avgColor);
+    const colorMatch = detectedColor === expectedColor;
+    const shapeMatch = detectedShape === expectedShape;
 
     if (colorMatch && shapeMatch) {
-      setResult({ matched: true, message: 'Pill verified successfully.' });
+      setResult({ matched: true, message: `Pill verified: ${detectedColor} ${detectedShape} matches ${medicine?.medicineName || 'the medicine'}.` });
       logDose(selectedMedicineId, 'taken');
     } else {
-      setResult({ matched: false, message: 'Pill does not match expected color or shape.' });
+      setResult({
+        matched: false,
+        message: `Pill does not match. Expected ${expectedColor} ${expectedShape}, saw ${detectedColor} ${detectedShape}.`,
+      });
       logDose(selectedMedicineId, 'mismatched');
     }
   };

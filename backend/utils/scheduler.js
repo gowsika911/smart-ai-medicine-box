@@ -1,13 +1,14 @@
 const cron = require('node-cron');
 const Medicine = require('../models/Medicine');
 const DoseLog = require('../models/DoseLog');
+const { localDateString } = require('./dateUtils');
 
 // How many minutes after the scheduled dose time we wait before
 // treating an un-verified dose as missed.
 const MISSED_GRACE_MINUTES = 30;
 
 function todayString() {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return localDateString(); // "YYYY-MM-DD" in local time
 }
 
 function buildScheduledDate(doseTime) {

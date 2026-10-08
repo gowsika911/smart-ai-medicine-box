@@ -14,8 +14,27 @@ function userResponse(user) {
     age: user.age ?? null,
     doctorName: user.doctorName || '',
     prescriptionNotes: user.prescriptionNotes || '',
+    phone: user.phone || '',
+    gender: user.gender || '',
+    bloodGroup: user.bloodGroup || '',
+    heightCm: user.heightCm ?? null,
+    weightKg: user.weightKg ?? null,
+    allergies: user.allergies || '',
+    medicalConditions: user.medicalConditions || '',
+    address: user.address || '',
+    emergencyContactName: user.emergencyContactName || '',
+    emergencyContactPhone: user.emergencyContactPhone || '',
+    emergencyContactRelation: user.emergencyContactRelation || '',
   };
 }
+
+// Profile fields a user is allowed to edit via PUT /api/auth/profile.
+const TEXT_PROFILE_FIELDS = [
+  'doctorName', 'prescriptionNotes', 'phone', 'gender', 'bloodGroup',
+  'allergies', 'medicalConditions', 'address',
+  'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+];
+const NUMBER_PROFILE_FIELDS = ['age', 'heightCm', 'weightKg'];
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
@@ -97,24 +116,39 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// PUT /api/auth/profile - update patient details (age, doctor, prescription notes)
+// PUT /api/auth/profile - update patient details (age, doctor, health info, emergency contact)
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { age, doctorName, prescriptionNotes } = req.body;
-
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (age !== undefined) user.age = age;
-    if (doctorName !== undefined) user.doctorName = doctorName;
-    if (prescriptionNotes !== undefined) user.prescriptionNotes = prescriptionNotes;
+    TEXT_PROFILE_FIELDS.forEach((field) => {
+      if (req.body[field] !== undefined) user[field] = req.body[field];
+    });
+
+    // Numbers: null / '' clears the value, otherwise it must be a valid number.
+    for (const field of NUMBER_PROFILE_FIELDS) {
+      const value = req.body[field];
+      if (value === undefined) continue;
+      if (value === null || value === '') {
+        user[field] = undefined;
+      } else if (Number.isNaN(Number(value))) {
+        return res.status(400).json({ error: `${field} must be a number` });
+      } else {
+        user[field] = Number(value);
+      }
+    }
 
     await user.save();
 
     res.json(userResponse(user));
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const message = Object.values(err.errors).map((e) => e.message).join('. ');
+      return res.status(400).json({ error: message });
+    }
     res.status(500).json({ error: err.message });
   }
 });

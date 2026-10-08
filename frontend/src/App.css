@@ -746,3 +746,17 @@ button {
 @media (max-width: 500px) {
   .reminder-stack { left: 12px; right: 12px; max-width: none; top: 12px; }
 }
+
+/* Profile page sections */
+.profile-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 28px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+}
+.profile-section-title:first-of-type { margin-top: 0; }
+.profile-bmi { margin: -4px 0 16px; font-size: 0.9rem; opacity: 0.8; }
+@media (max-width: 640px) {
+  .field-row { flex-direction: column; gap: 0; }
+}
