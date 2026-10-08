@@ -34,6 +34,10 @@ function AppLayout() {
             <IconPlus />
             Add Medicine
           </NavLink>
+          <NavLink to="/scan" className="sidebar-link">
+            <IconScan />
+            Scan Prescription
+          </NavLink>
           <NavLink to="/verify" className="sidebar-link">
             <IconCamera />
             Verify Medicine
@@ -82,6 +86,15 @@ function IconPlus() {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <circle cx="9" cy="9" r="7.25" stroke="currentColor" strokeWidth="1.5" />
       <path d="M9 6v6M6 9h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconScan() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M2 6V3.5A1.5 1.5 0 0 1 3.5 2H6M12 2h2.5A1.5 1.5 0 0 1 16 3.5V6M16 12v2.5a1.5 1.5 0 0 1-1.5 1.5H12M6 16H3.5A1.5 1.5 0 0 1 2 14.5V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M5 9h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

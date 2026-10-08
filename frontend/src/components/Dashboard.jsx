@@ -43,10 +43,61 @@ function ComplianceRing({ score, riskLevel }) {
   );
 }
 
+function RiskPanel({ risk }) {
+  if (!risk) return null;
+
+  const usingModel = risk.model === 'logistic-regression';
+
+  return (
+    <section className="risk-panel">
+      <div className="risk-panel-header">
+        <h2>AI missed-dose prediction</h2>
+        <span className="risk-model-badge">
+          {usingModel ? `Learned from ${risk.trainedOn} past doses` : 'Basic estimate'}
+        </span>
+      </div>
+      {risk.note && <p className="risk-note">{risk.note}</p>}
+
+      {risk.predictions.length === 0 && (
+        <p className="risk-note">Add a medicine to see predictions.</p>
+      )}
+
+      <div className="risk-list">
+        {risk.predictions.map((p) => (
+          <div className="risk-row" key={p.medicineId}>
+            <div className="risk-row-top">
+              <div>
+                <strong>{p.medicineName}</strong>
+                <span className="risk-time"> · next dose {p.doseTime}</span>
+              </div>
+              <span className="risk-level" data-level={p.level}>
+                {Math.round(p.probability * 100)}% · {p.level}
+              </span>
+            </div>
+            <div className="risk-bar">
+              <div
+                className="risk-bar-fill"
+                data-level={p.level}
+                style={{ width: `${Math.max(3, Math.round(p.probability * 100))}%` }}
+              />
+            </div>
+            {p.reasons.length > 0 && <p className="risk-reason">Why: {p.reasons.join('; ')}</p>}
+          </div>
+        ))}
+      </div>
+      <p className="risk-footnote">
+        Chance of missing the next dose, predicted from this patient's own dose history
+        (time of day, weekday vs weekend, recent misses). It is a guide, not medical advice.
+      </p>
+    </section>
+  );
+}
+
 function Dashboard() {
   const { user } = useAuth();
   const [medicines, setMedicines] = useState([]);
   const [compliance, setCompliance] = useState(null);
+  const [risk, setRisk] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -64,6 +115,14 @@ function Dashboard() {
       ]);
       setMedicines(medRes.data);
       setCompliance(compRes.data);
+
+      // The prediction is a bonus - never let it break the rest of the dashboard.
+      try {
+        const riskRes = await axiosInstance.get('/risk');
+        setRisk(riskRes.data);
+      } catch (riskErr) {
+        console.error('Risk prediction unavailable:', riskErr.message);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load dashboard.');
     } finally {
@@ -143,6 +202,8 @@ function Dashboard() {
           </div>
         </section>
       )}
+
+      <RiskPanel risk={risk} />
 
       <section className="medicines-section">
         <h2>Today's medicines</h2>

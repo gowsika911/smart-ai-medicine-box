@@ -760,3 +760,56 @@ button {
 @media (max-width: 640px) {
   .field-row { flex-direction: column; gap: 0; }
 }
+
+/* AI risk prediction panel */
+.risk-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px;
+  margin-bottom: 28px;
+}
+.risk-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.risk-panel-header h2 { margin: 0; font-size: 1.1rem; }
+.risk-model-badge {
+  font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: rgba(63, 131, 97, 0.12); color: var(--color-brand);
+}
+.risk-note { margin: 10px 0 0; font-size: 0.85rem; color: var(--color-text-muted); }
+.risk-list { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.risk-row-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.risk-time { color: var(--color-text-muted); font-size: 0.85rem; }
+.risk-level { font-size: 0.85rem; font-weight: 700; }
+.risk-level[data-level='Low'] { color: var(--color-success); }
+.risk-level[data-level='Medium'] { color: var(--color-warning); }
+.risk-level[data-level='High'] { color: var(--color-danger); }
+.risk-bar { height: 8px; border-radius: 999px; background: var(--color-border); margin-top: 8px; overflow: hidden; }
+.risk-bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+.risk-bar-fill[data-level='Low'] { background: var(--color-success); }
+.risk-bar-fill[data-level='Medium'] { background: var(--color-warning); }
+.risk-bar-fill[data-level='High'] { background: var(--color-danger); }
+.risk-reason { margin: 6px 0 0; font-size: 0.82rem; color: var(--color-text-muted); }
+.risk-footnote { margin: 16px 0 0; font-size: 0.75rem; color: var(--color-text-muted); }
+
+/* Prescription scanner */
+.scan-file-input { display: none; }
+.scan-upload { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.scan-preview { display: block; max-width: 100%; max-height: 280px; margin-top: 18px; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.scan-progress { margin-top: 18px; font-size: 0.85rem; color: var(--color-text-muted); }
+.scan-progress-bar { height: 8px; border-radius: 999px; background: var(--color-border); overflow: hidden; margin-bottom: 8px; }
+.scan-progress-fill { height: 100%; background: var(--color-brand-light); transition: width 0.3s ease; }
+.scan-warning { margin-bottom: 16px; }
+.scan-rows { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+.scan-row { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.scan-row-off { opacity: 0.6; }
+.scan-check { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; padding-top: 4px; cursor: pointer; }
+.scan-fields { flex: 1; min-width: 0; }
+.scan-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.scan-tag { font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; background: rgba(63, 131, 97, 0.12); color: var(--color-brand); }
+.scan-tag-warn { background: rgba(216, 151, 60, 0.18); color: #8a5a12; }
+.scan-raw { margin-top: 22px; font-size: 0.85rem; }
+.scan-raw pre { white-space: pre-wrap; background: var(--color-bg); padding: 12px; border-radius: var(--radius-sm); max-height: 240px; overflow: auto; }
+@media (max-width: 640px) { .scan-row { flex-direction: column; } }
+
+.alert-banner.scan-warning { background: rgba(216, 151, 60, 0.15); color: #8a5a12; border-color: rgba(216, 151, 60, 0.4); }
