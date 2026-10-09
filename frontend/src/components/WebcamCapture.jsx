@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
+import { loadPillModel, interpretPrediction } from '../utils/pillModel';
 
 const MIN_OBJECT_PIXELS = 150;
 
@@ -83,10 +84,11 @@ function classifyColor({ r, g, b }) {
   const max = Math.max(rn, gn, bn);
   const min = Math.min(rn, gn, bn);
   const l = (max + min) / 2;
-  const d = max - min;
-  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  const d = max - min; // "chroma": how far the colour is from grey
 
-  if (s < 0.2 && l > 0.6) return 'white';
+  // White/off-white pills have almost no chroma. (HSL saturation is unreliable
+  // near white - a tiny tint looks "saturated" - so we use chroma instead.)
+  if (d < 0.15 && l > 0.5) return 'white';
 
   let h;
   if (d === 0) h = 0;
@@ -113,6 +115,8 @@ function WebcamCapture() {
   const [result, setResult] = useState(null);
   const [logging, setLogging] = useState(false);
   const [logMessage, setLogMessage] = useState('');
+  const [pillModel, setPillModel] = useState(null); // trained AI model, if one is published
+  const [modelState, setModelState] = useState('checking'); // checking | ready | none | error
 
   useEffect(() => {
     startCamera();
@@ -121,6 +125,27 @@ function WebcamCapture() {
     return () => {
       const stream = videoElement?.srcObject;
       if (stream) stream.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let loaded = null;
+    const load = async () => {
+      try {
+        loaded = await loadPillModel();
+        if (cancelled) return loaded?.dispose();
+        setPillModel(loaded);
+        setModelState(loaded ? 'ready' : 'none');
+      } catch (err) {
+        console.error('Could not load pill model:', err);
+        if (!cancelled) setModelState('error'); // falls back to the colour/shape check
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+      loaded?.dispose();
     };
   }, []);
 
@@ -145,7 +170,7 @@ function WebcamCapture() {
     }
   };
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (!selectedMedicineId) {
       alert('Add a medicine first, then select it here.');
       return;
@@ -160,6 +185,28 @@ function WebcamCapture() {
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     setLogMessage('');
 
+    // 1) Trained AI model (when available)
+    if (pillModel) {
+      try {
+        const predictions = await pillModel.predict(canvas);
+        const verdict = interpretPrediction(predictions, medicine?.medicineName || '');
+        if (verdict.status === 'match') {
+          setResult({ matched: true, message: verdict.message });
+          logDose(selectedMedicineId, 'taken');
+        } else if (verdict.status === 'mismatch') {
+          setResult({ matched: false, message: verdict.message });
+          logDose(selectedMedicineId, 'mismatched');
+        } else {
+          // unsure / no pill: ask the user to retry, do not record anything
+          setResult({ matched: false, message: verdict.message });
+        }
+        return;
+      } catch (err) {
+        console.error('AI model failed, using colour/shape check:', err);
+      }
+    }
+
+    // 2) Fallback: simple colour + shape check
     const data = getImageData(canvas);
 
     if (isImageTooDark(data, canvas.width, canvas.height)) {
@@ -209,6 +256,11 @@ function WebcamCapture() {
         <div>
           <h1>Verify medicine</h1>
           <p className="page-subtitle">Show the pill to the camera to confirm and log the dose.</p>
+          <span className="risk-model-badge" data-testid="verify-mode">
+            {modelState === 'ready' && 'AI pill recognition active'}
+            {modelState === 'checking' && 'Checking for AI model...'}
+            {(modelState === 'none' || modelState === 'error') && 'Colour & shape check'}
+          </span>
         </div>
       </header>
 

@@ -33,8 +33,17 @@ Dashboard card that shows the chance of missing each medicine's **next dose**.
 - The user reviews and edits every row before the medicines are added.
 - Limitations: printed text only (handwriting is unreliable); as-needed (SOS) and weekly medicines are shown but not added automatically because the app schedules daily doses.
 
-### 3. Pill verification (computer vision)
-Webcam check compares the pill's colour and shape against what was saved for that medicine (rule-based image processing).
+### 3. Pill recognition (computer vision + optional trained model)
+"Verify Medicine" page, two modes:
+- **AI model (optional):** if a Google Teachable Machine model is placed in `frontend/public/model/` (see the README there), the webcam image is classified with TensorFlow.js. A dose is only logged as taken when the model is at least 80% sure AND the class matches the selected medicine. Low confidence or "no pill" never logs anything.
+- **Fallback:** without a model, a rule-based check compares the pill's colour and shape with what was saved for that medicine.
+
+### 4. Health assistant (LLM chatbot)
+`/assistant` page: ask about medicines, timing, food and side effects.
+- The backend (`/api/chat`) calls a free OpenAI-compatible API (Groq by default). The API key lives only in server environment variables (`GROQ_API_KEY`), never in the browser.
+- The prompt includes the patient's medicine list, allergies and conditions, but NOT their name, phone, email or address.
+- Safety: it will not diagnose or change doses; emergency words (overdose, chest pain, ...) get a fixed "call 112/108" reply and are never sent to the AI; 30 questions per user per hour.
+- Free-tier API traffic may be used by the provider, so avoid typing personal identifiers.
 
 ## ⚙️ Installation & Setup
 

@@ -11,6 +11,7 @@ import WebcamCapture from './components/WebcamCapture';
 import Alerts from './components/Alerts';
 import Profile from './components/Profile';
 import PrescriptionScanner from './components/PrescriptionScanner';
+import Assistant from './components/Assistant';
 import './App.css';
 
 function RootRedirect() {
@@ -35,6 +36,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/medicines/new" element={<MedicineForm />} />
               <Route path="/scan" element={<PrescriptionScanner />} />
+              <Route path="/assistant" element={<Assistant />} />
               <Route path="/verify" element={<WebcamCapture />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/profile" element={<Profile />} />

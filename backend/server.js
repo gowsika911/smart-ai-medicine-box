@@ -13,6 +13,7 @@ const doseLogRoutes = require('./routes/doseLogRoutes');
 const complianceRoutes = require('./routes/complianceRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const riskRoutes = require('./routes/riskRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const { startScheduler } = require('./utils/scheduler');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/doselogs', doseLogRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/risk', riskRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Test route
 app.get('/health', (req, res) => res.json({ ok: true }));

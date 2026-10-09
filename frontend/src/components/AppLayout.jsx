@@ -42,6 +42,10 @@ function AppLayout() {
             <IconCamera />
             Verify Medicine
           </NavLink>
+          <NavLink to="/assistant" className="sidebar-link">
+            <IconChat />
+            Health Assistant
+          </NavLink>
           <NavLink to="/alerts" className="sidebar-link">
             <IconBell />
             Alerts
@@ -95,6 +99,14 @@ function IconScan() {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path d="M2 6V3.5A1.5 1.5 0 0 1 3.5 2H6M12 2h2.5A1.5 1.5 0 0 1 16 3.5V6M16 12v2.5a1.5 1.5 0 0 1-1.5 1.5H12M6 16H3.5A1.5 1.5 0 0 1 2 14.5V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       <path d="M5 9h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconChat() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5v6a1.5 1.5 0 0 1-1.5 1.5H8l-3 3v-3H4.5A1.5 1.5 0 0 1 3 10.5v-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }
