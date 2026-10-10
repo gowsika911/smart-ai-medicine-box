@@ -99,9 +99,13 @@ function extractName(line, frequencyMatch) {
     .replace(/\b(?:after|before|with)\s+(?:food|meals?|breakfast|lunch|dinner|milk)\b.*$/i, '')
     .replace(/\b(?:x|for)\s*\d+\s*(?:days?|weeks?|months?)\b.*$/i, '')
     .replace(/\b(?:once|twice|thrice)\b.*$/i, '')
+    .replace(/\b(?:sos|prn|as\s+needed|if\s+required|when\s+required)\b.*$/i, '')
     .replace(/[^A-Za-z0-9.%/ ()-]/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^[\s.\-–—:]+|[\s.\-–—:,]+$/g, '');
+
+  // OCR often reads the "I" of "IU" as "/" or "|" ("60000/U")
+  text = text.replace(/(\d)\s?[/|]U\b/gi, '$1IU');
 
   return titleCase(text).replace(/\b(\d+(?:\.\d+)?)\s?(Mg|Mcg|Ug|G|Ml|Iu)\b/g, (_, n, u) => `${n}${u.toLowerCase()}`);
 }

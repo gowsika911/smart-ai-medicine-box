@@ -68,6 +68,9 @@ router.put('/:id', async (req, res) => {
       if (req.body[key] !== undefined) changes[key] = req.body[key];
     });
 
+    // Changing the dose time restarts the clock (see Medicine.activeFrom).
+    if (changes.doseTime) changes.activeFrom = new Date();
+
     const updated = await Medicine.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
       changes,

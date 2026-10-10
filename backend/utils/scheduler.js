@@ -52,6 +52,14 @@ async function runSchedulerTick() {
       }
 
       const scheduled = buildScheduledDate(medicine.doseTime);
+
+      // Added (or re-timed) after today's dose time? Then today's dose does not
+      // count - it starts tomorrow. Older medicines without the field use createdAt.
+      const activeFrom = medicine.activeFrom || medicine.createdAt;
+      if (activeFrom && new Date(activeFrom) > scheduled) {
+        continue;
+      }
+
       const minutesPast = (now - scheduled) / 60000;
 
       if (minutesPast >= MISSED_GRACE_MINUTES) {

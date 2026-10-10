@@ -53,25 +53,37 @@ function preprocessImage(file) {
   });
 }
 
-function buildRows(parsed, usedCompartments) {
-  const used = new Set(usedCompartments);
+const normalizeName = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function buildRows(parsed, existingMedicines) {
+  const used = new Set(existingMedicines.map((m) => m.compartmentNumber));
   const rows = [];
 
   parsed.forEach((med, medIndex) => {
-    let compartment = null;
-    for (let n = 1; n <= TOTAL_COMPARTMENTS; n++) {
-      if (!used.has(n)) {
-        compartment = n;
-        used.add(n);
-        break;
+    // Same medicine already in the box? Reuse its compartment instead of taking a new slot.
+    const sameMedicine = existingMedicines.find(
+      (m) => normalizeName(m.medicineName) === normalizeName(med.name)
+    );
+
+    let compartment = sameMedicine ? sameMedicine.compartmentNumber : null;
+    if (!compartment) {
+      for (let n = 1; n <= TOTAL_COMPARTMENTS; n++) {
+        if (!used.has(n)) {
+          compartment = n;
+          used.add(n);
+          break;
+        }
       }
     }
 
     const times = med.times.length ? med.times : ['08:00'];
     times.forEach((time, i) => {
+      const alreadyAdded = existingMedicines.some(
+        (m) => normalizeName(m.medicineName) === normalizeName(med.name) && m.doseTime === time
+      );
       rows.push({
         key: `${medIndex}-${i}`,
-        include: !med.skipReason,
+        include: !med.skipReason && !alreadyAdded,
         name: med.name,
         doseTime: time,
         compartment,
@@ -80,6 +92,7 @@ function buildRows(parsed, usedCompartments) {
         note: med.note,
         assumed: med.assumed,
         skipReason: med.skipReason,
+        alreadyAdded,
       });
     });
   });
@@ -91,7 +104,7 @@ function PrescriptionScanner() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [existingCompartments, setExistingCompartments] = useState([]);
+  const [existingMedicines, setExistingMedicines] = useState([]);
   const [previewUrl, setPreviewUrl] = useState('');
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -107,7 +120,7 @@ function PrescriptionScanner() {
     const loadExisting = async () => {
       try {
         const res = await axiosInstance.get('/medicines');
-        setExistingCompartments(res.data.map((m) => m.compartmentNumber));
+        setExistingMedicines(res.data);
       } catch (err) {
         console.error('Could not load existing medicines:', err.message);
       }
@@ -171,7 +184,7 @@ function PrescriptionScanner() {
           'No medicines found. Use a clear, well-lit photo of a printed prescription, or add medicines manually.'
         );
       } else {
-        setRows(buildRows(parsed, existingCompartments));
+        setRows(buildRows(parsed, existingMedicines));
       }
     } catch (err) {
       setError(err.message || 'Scanning failed. Check your internet connection and try again.');
@@ -195,6 +208,14 @@ function PrescriptionScanner() {
       if (!r.compartment) return setError(`Choose a compartment for ${r.name}.`);
     }
     if (selected.length === 0) return setError('Tick at least one medicine to add.');
+    const dupes = selected.filter((r) =>
+      existingMedicines.some(
+        (m) => normalizeName(m.medicineName) === normalizeName(r.name) && m.doseTime === r.doseTime
+      )
+    );
+    if (dupes.length && !window.confirm(`${dupes.map((d) => d.name).join(', ')} already exists at the same time. Add again anyway?`)) {
+      return;
+    }
 
     setSaving(true);
     let added = 0;
@@ -343,6 +364,7 @@ function PrescriptionScanner() {
                       {r.note && <span className="scan-tag">{r.note}</span>}
                       {r.assumed && <span className="scan-tag scan-tag-warn">No schedule found, guessed 8:00 AM</span>}
                       {r.skipReason && <span className="scan-tag scan-tag-warn">{r.skipReason}</span>}
+                      {r.alreadyAdded && <span className="scan-tag scan-tag-warn">Already in your list, so not ticked</span>}
                     </div>
                   </div>
 

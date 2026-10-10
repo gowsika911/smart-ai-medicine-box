@@ -39,6 +39,13 @@ const medicineSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // When this dose time started to count. A medicine added (or re-timed) AFTER
+    // today's dose time only starts counting from tomorrow - otherwise adding a
+    // morning medicine in the afternoon would instantly be marked "missed".
+    activeFrom: {
+      type: Date,
+      default: Date.now,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
