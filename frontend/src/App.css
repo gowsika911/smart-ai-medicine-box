@@ -829,3 +829,9 @@ button {
 .chat-form input { flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font: inherit; background: var(--color-surface); }
 .chat-form input:focus { outline: 2px solid var(--color-brand-light); outline-offset: 1px; }
 .chat-footnote { margin: 0; font-size: 0.75rem; color: var(--color-text-muted); }
+
+/* Duplicate / completed medicines */
+.field-warning { margin: 6px 0 0; font-size: 0.82rem; color: var(--color-danger); }
+.medicine-ends { margin: 2px 0 8px; font-size: 0.8rem; color: var(--color-text-muted); }
+.medicine-card-done { opacity: 0.65; border-left-color: var(--color-border); }
+.completed-section { margin-top: 28px; }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 import TimePicker from './TimePicker';
@@ -23,9 +23,29 @@ function MedicineForm() {
   const [compartmentNumber, setCompartmentNumber] = useState(null);
   const [pillColor, setPillColor] = useState('white');
   const [pillShape, setPillShape] = useState('circle');
+  const [durationDays, setDurationDays] = useState('');
+  const [activeMedicines, setActiveMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Load what the patient is already taking, so a duplicate can be stopped before saving.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axiosInstance.get('/medicines');
+        setActiveMedicines(res.data.filter((m) => !m.completed));
+      } catch (err) {
+        console.error('Could not load medicines:', err.message);
+      }
+    };
+    load();
+  }, []);
+
+  const normalize = (text) => String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const duplicate = medicineName.trim()
+    ? activeMedicines.find((m) => normalize(m.medicineName) === normalize(medicineName))
+    : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +54,14 @@ function MedicineForm() {
 
     if (!medicineName || !doseTime || !compartmentNumber) {
       setApiError('Please fill in the name, time, and select a compartment.');
+      return;
+    }
+    if (duplicate) {
+      setApiError(`${duplicate.medicineName} is already in your list.`);
+      return;
+    }
+    if (durationDays !== '' && (!Number.isInteger(Number(durationDays)) || Number(durationDays) < 1 || Number(durationDays) > 365)) {
+      setApiError('Course length must be 1 to 365 days, or leave it empty.');
       return;
     }
 
@@ -45,6 +73,7 @@ function MedicineForm() {
         compartmentNumber,
         pillColor,
         pillShape,
+        durationDays: durationDays === '' ? undefined : Number(durationDays),
       });
 
       setSuccessMsg('Medicine added successfully.');
@@ -82,12 +111,34 @@ function MedicineForm() {
                 onChange={(e) => setMedicineName(e.target.value)}
                 placeholder="e.g. Metformin 500mg"
               />
+              {duplicate && (
+                <p className="field-warning" role="alert">
+                  {duplicate.medicineName} is already in your list. Remove it first, or add it again
+                  after its course ends.
+                </p>
+              )}
             </div>
 
             <div className="field-group">
               <label htmlFor="med-time">Dose time</label>
               <TimePicker id="med-time" value={doseTime} onChange={setDoseTime} />
             </div>
+          </div>
+
+          <div className="field-group">
+            <label htmlFor="med-duration">Course length in days (optional)</label>
+            <input
+              id="med-duration"
+              type="number"
+              min="1"
+              max="365"
+              value={durationDays}
+              onChange={(e) => setDurationDays(e.target.value)}
+              placeholder="e.g. 30 - leave empty if it is ongoing"
+            />
+            <p className="compartment-hint">
+              When the course ends, the medicine moves to "Completed" and can be added again.
+            </p>
           </div>
 
           <div className="field-row">
@@ -134,7 +185,7 @@ function MedicineForm() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading || Boolean(duplicate)}>
             {loading ? 'Adding...' : 'Add medicine'}
           </button>
         </form>

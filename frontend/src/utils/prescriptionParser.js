@@ -62,6 +62,16 @@ function detectFrequency(text) {
   return null;
 }
 
+// "x 30 days", "for 2 weeks", "x 1 month"  ->  number of days (1..365), or null
+function detectDuration(text) {
+  const m = text.match(/(?:\bx\s*|\bfor\s+)(\d{1,3})\s*(days?|d|weeks?|wks?|months?|mos?)\b/i);
+  if (!m) return null;
+  const unit = m[2].toLowerCase();
+  const perUnit = unit.startsWith('w') ? 7 : unit.startsWith('m') ? 30 : 1;
+  const days = Number(m[1]) * perUnit;
+  return days >= 1 && days <= 365 ? days : null;
+}
+
 function detectFood(text) {
   const hit = FOOD.find((f) => f.re.test(text));
   return hit ? hit.text : '';
@@ -112,7 +122,7 @@ function extractName(line, frequencyMatch) {
 
 /**
  * @param {string} rawText OCR output
- * @returns {Array<{name:string, times:string[], note:string, assumed:boolean, skipReason:string, source:string}>}
+ * @returns {Array<{name:string, times:string[], durationDays:number|null, note:string, assumed:boolean, skipReason:string, source:string}>}
  */
 export function parsePrescription(rawText) {
   const lines = String(rawText || '')
@@ -155,6 +165,7 @@ export function parsePrescription(rawText) {
       name,
       times: skipReason ? [] : freq ? freq.times : [TIMES.morning],
       note: detectFood(scheduleText),
+      durationDays: detectDuration(scheduleText),
       assumed: !freq && !skipReason, // no schedule found, we guessed 08:00
       skipReason,
       source: line,

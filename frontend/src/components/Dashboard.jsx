@@ -208,7 +208,7 @@ function Dashboard() {
       <section className="medicines-section">
         <h2>Today's medicines</h2>
 
-        {medicines.length === 0 && (
+        {medicines.filter((m) => !m.completed).length === 0 && (
           <div className="empty-state">
             <p>No medicines added yet.</p>
             <Link to="/medicines/new" className="btn-secondary">Add your first medicine</Link>
@@ -216,7 +216,7 @@ function Dashboard() {
         )}
 
         <div className="medicine-grid">
-          {medicines.map((med) => (
+          {medicines.filter((m) => !m.completed).map((med) => (
             <div className="medicine-card" key={med._id} data-status={med.status}>
               <div className="medicine-card-top">
                 <span className="compartment-badge">{med.compartmentNumber}</span>
@@ -224,6 +224,9 @@ function Dashboard() {
               </div>
               <h3>{med.medicineName}</h3>
               <p className="medicine-time">Scheduled {med.doseTime}</p>
+              {med.endDate && (
+                <p className="medicine-ends">Course ends {new Date(med.endDate).toLocaleDateString()}</p>
+              )}
               <button className="card-delete" onClick={() => handleDelete(med._id)}>
                 Remove
               </button>
@@ -231,6 +234,30 @@ function Dashboard() {
           ))}
         </div>
       </section>
+
+      {medicines.some((m) => m.completed) && (
+        <section className="medicines-section completed-section">
+          <h2>Completed courses</h2>
+          <p className="risk-note">
+            These courses have ended, so they are no longer tracked. You can add the same medicine again.
+          </p>
+          <div className="medicine-grid">
+            {medicines.filter((m) => m.completed).map((med) => (
+              <div className="medicine-card medicine-card-done" key={med._id}>
+                <div className="medicine-card-top">
+                  <span className="compartment-badge">{med.compartmentNumber}</span>
+                  <span className="status-pill">completed</span>
+                </div>
+                <h3>{med.medicineName}</h3>
+                <p className="medicine-time">Ended {new Date(med.endDate).toLocaleDateString()}</p>
+                <button className="card-delete" onClick={() => handleDelete(med._id)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

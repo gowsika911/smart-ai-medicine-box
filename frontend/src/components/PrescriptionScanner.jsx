@@ -55,44 +55,35 @@ function preprocessImage(file) {
 
 const normalizeName = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-function buildRows(parsed, existingMedicines) {
-  const used = new Set(existingMedicines.map((m) => m.compartmentNumber));
+function buildRows(parsed, activeMedicines) {
+  const used = new Set(activeMedicines.map((m) => m.compartmentNumber));
+  const activeNames = new Set(activeMedicines.map((m) => normalizeName(m.medicineName)));
   const rows = [];
 
   parsed.forEach((med, medIndex) => {
-    // Same medicine already in the box? Reuse its compartment instead of taking a new slot.
-    const sameMedicine = existingMedicines.find(
-      (m) => normalizeName(m.medicineName) === normalizeName(med.name)
-    );
-
-    let compartment = sameMedicine ? sameMedicine.compartmentNumber : null;
-    if (!compartment) {
-      for (let n = 1; n <= TOTAL_COMPARTMENTS; n++) {
-        if (!used.has(n)) {
-          compartment = n;
-          used.add(n);
-          break;
-        }
+    let compartment = null;
+    for (let n = 1; n <= TOTAL_COMPARTMENTS; n++) {
+      if (!used.has(n)) {
+        compartment = n;
+        used.add(n);
+        break;
       }
     }
 
     const times = med.times.length ? med.times : ['08:00'];
     times.forEach((time, i) => {
-      const alreadyAdded = existingMedicines.some(
-        (m) => normalizeName(m.medicineName) === normalizeName(med.name) && m.doseTime === time
-      );
       rows.push({
         key: `${medIndex}-${i}`,
-        include: !med.skipReason && !alreadyAdded,
+        include: !med.skipReason && !activeNames.has(normalizeName(med.name)),
         name: med.name,
         doseTime: time,
         compartment,
         pillColor: 'white',
         pillShape: 'circle',
+        durationDays: med.durationDays ? String(med.durationDays) : '',
         note: med.note,
         assumed: med.assumed,
         skipReason: med.skipReason,
-        alreadyAdded,
       });
     });
   });
@@ -133,6 +124,11 @@ function PrescriptionScanner() {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  // Medicines the patient is taking right now (finished courses don't count).
+  const activeMedicines = existingMedicines.filter((m) => !m.completed);
+  const activeNames = new Set(activeMedicines.map((m) => normalizeName(m.medicineName)));
+  const isBlocked = (row) => activeNames.has(normalizeName(row.name));
 
   const updateRow = (key, changes) =>
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...changes } : r)));
@@ -184,7 +180,7 @@ function PrescriptionScanner() {
           'No medicines found. Use a clear, well-lit photo of a printed prescription, or add medicines manually.'
         );
       } else {
-        setRows(buildRows(parsed, existingMedicines));
+        setRows(buildRows(parsed, activeMedicines));
       }
     } catch (err) {
       setError(err.message || 'Scanning failed. Check your internet connection and try again.');
@@ -197,7 +193,7 @@ function PrescriptionScanner() {
 
   const removeRow = (key) => setRows((prev) => prev.filter((r) => r.key !== key));
 
-  const selected = rows ? rows.filter((r) => r.include) : [];
+  const selected = rows ? rows.filter((r) => r.include && !isBlocked(r)) : [];
 
   const handleSave = async () => {
     setError('');
@@ -206,41 +202,30 @@ function PrescriptionScanner() {
     for (const r of selected) {
       if (!r.name.trim()) return setError('Every selected medicine needs a name.');
       if (!r.compartment) return setError(`Choose a compartment for ${r.name}.`);
+      if (r.durationDays !== '' && (!Number.isInteger(Number(r.durationDays)) || Number(r.durationDays) < 1 || Number(r.durationDays) > 365)) {
+        return setError(`Course length for ${r.name} must be 1 to 365 days (or leave it empty).`);
+      }
     }
     if (selected.length === 0) return setError('Tick at least one medicine to add.');
-    const dupes = selected.filter((r) =>
-      existingMedicines.some(
-        (m) => normalizeName(m.medicineName) === normalizeName(r.name) && m.doseTime === r.doseTime
-      )
-    );
-    if (dupes.length && !window.confirm(`${dupes.map((d) => d.name).join(', ')} already exists at the same time. Add again anyway?`)) {
-      return;
-    }
 
     setSaving(true);
-    let added = 0;
-    const failed = [];
-    for (const r of selected) {
-      try {
-        await axiosInstance.post('/medicines', {
+    try {
+      await axiosInstance.post('/medicines/bulk', {
+        medicines: selected.map((r) => ({
           medicineName: r.name.trim(),
           doseTime: r.doseTime,
           compartmentNumber: Number(r.compartment),
           pillColor: r.pillColor,
           pillShape: r.pillShape,
-        });
-        added += 1;
-      } catch (err) {
-        failed.push(`${r.name}: ${err.response?.data?.error || 'failed'}`);
-      }
-    }
-    setSaving(false);
-
-    if (failed.length) {
-      setError(`Added ${added}, but some failed - ${failed.join('; ')}`);
-    } else {
-      setSaveMsg(`${added} medicine${added === 1 ? '' : 's'} added.`);
+          durationDays: r.durationDays === '' ? undefined : Number(r.durationDays),
+        })),
+      });
+      setSaveMsg(`${selected.length} medicine${selected.length === 1 ? '' : 's'} added.`);
       setTimeout(() => navigate('/dashboard'), 900);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not add the medicines.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -304,11 +289,12 @@ function PrescriptionScanner() {
 
             <div className="scan-rows">
               {rows.map((r) => (
-                <div className={`scan-row ${r.include ? '' : 'scan-row-off'}`} key={r.key}>
+                <div className={`scan-row ${r.include && !isBlocked(r) ? '' : 'scan-row-off'}`} key={r.key}>
                   <label className="scan-check">
                     <input
                       type="checkbox"
-                      checked={r.include}
+                      checked={r.include && !isBlocked(r)}
+                      disabled={isBlocked(r)}
                       onChange={(e) => updateRow(r.key, { include: e.target.checked })}
                     />
                     <span>Add</span>
@@ -358,13 +344,28 @@ function PrescriptionScanner() {
                           <option value="oval">Oval / capsule</option>
                         </select>
                       </div>
+                      <div className="field-group">
+                        <label>Course (days)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          placeholder="ongoing"
+                          value={r.durationDays}
+                          onChange={(e) => updateRow(r.key, { durationDays: e.target.value })}
+                        />
+                      </div>
                     </div>
 
                     <div className="scan-tags">
                       {r.note && <span className="scan-tag">{r.note}</span>}
                       {r.assumed && <span className="scan-tag scan-tag-warn">No schedule found, guessed 8:00 AM</span>}
                       {r.skipReason && <span className="scan-tag scan-tag-warn">{r.skipReason}</span>}
-                      {r.alreadyAdded && <span className="scan-tag scan-tag-warn">Already in your list, so not ticked</span>}
+                      {isBlocked(r) && (
+                        <span className="scan-tag scan-tag-warn">
+                          Already in your list. Remove it first, or add it after its course ends.
+                        </span>
+                      )}
                     </div>
                   </div>
 

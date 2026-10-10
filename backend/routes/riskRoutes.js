@@ -4,6 +4,7 @@ const DoseLog = require('../models/DoseLog');
 const Medicine = require('../models/Medicine');
 const protect = require('../middleware/authMiddleware');
 const { predictRisk } = require('../utils/riskModel');
+const { isActive } = require('../utils/medicineRules');
 
 router.use(protect);
 
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
       DoseLog.find({ userId: req.user.id }).lean(),
       Medicine.find({ userId: req.user.id }).lean(),
     ]);
-    res.json(predictRisk(logs, medicines));
+    res.json(predictRisk(logs, medicines.filter((m) => isActive(m))));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

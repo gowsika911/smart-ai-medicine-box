@@ -40,6 +40,11 @@ async function runSchedulerTick() {
 
   for (const medicine of medicines) {
     try {
+      // Course finished (endDate passed): no more reminders or missed-dose checks.
+      if (medicine.endDate && new Date(medicine.endDate) < now) {
+        continue;
+      }
+
       if (medicine.lastResetDate !== today) {
         medicine.status = 'pending';
         medicine.lastResetDate = today;

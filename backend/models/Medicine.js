@@ -39,6 +39,17 @@ const medicineSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Optional length of the course in days (blank = ongoing until removed).
+    durationDays: {
+      type: Number,
+      min: 1,
+      max: 365,
+    },
+    // Last day of the course. After this the medicine counts as completed:
+    // no more missed-dose checks, and the same medicine may be added again.
+    endDate: {
+      type: Date,
+    },
     // When this dose time started to count. A medicine added (or re-timed) AFTER
     // today's dose time only starts counting from tomorrow - otherwise adding a
     // morning medicine in the afternoon would instantly be marked "missed".
