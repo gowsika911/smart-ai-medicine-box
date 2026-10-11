@@ -835,3 +835,18 @@ button {
 .medicine-ends { margin: 2px 0 8px; font-size: 0.8rem; color: var(--color-text-muted); }
 .medicine-card-done { opacity: 0.65; border-left-color: var(--color-border); }
 .completed-section { margin-top: 28px; }
+
+/* Edit medicine, multiple dose times, caregiver email */
+.time-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.btn-link { background: none; border: none; padding: 4px 0; font: inherit; font-size: 0.85rem; color: var(--color-brand); cursor: pointer; text-decoration: underline; }
+.btn-link:disabled { opacity: 0.5; cursor: default; }
+.sibling-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip-current { background: var(--color-brand); color: #fff; }
+.form-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.card-actions { display: flex; align-items: center; gap: 16px; }
+.card-edit { font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--color-brand); text-decoration: none; }
+.card-edit:hover { text-decoration: underline; }
+.profile-checkbox { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 14px; font-size: 0.88rem; cursor: pointer; }
+.profile-checkbox input { margin-top: 3px; }
+.verify-details { margin-top: 6px; font-size: 0.78rem; font-weight: 400; opacity: 0.85; }
+#send-test-email { margin: 0 12px 16px 0; }

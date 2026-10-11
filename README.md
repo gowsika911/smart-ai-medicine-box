@@ -45,6 +45,19 @@ Dashboard card that shows the chance of missing each medicine's **next dose**.
 - Safety: it will not diagnose or change doses; emergency words (overdose, chest pain, ...) get a fixed "call 112/108" reply and are never sent to the AI; 30 questions per user per hour.
 - Free-tier API traffic may be used by the provider, so avoid typing personal identifiers.
 
+### 5. Edit medicines and several dose times
+- **Edit** button on every medicine card: change the name, time, compartment, pill look and course length. Name, compartment, pill look and course length apply to every dose time of that medicine.
+- A medicine taken more than once a day can be added with several times at once ("+ Add another time"), or later from the Edit page.
+- One active medicine per name: the same medicine cannot be added twice until it is removed or its course ends.
+
+### 6. Missed-dose emails to the emergency contact
+- Optional and opt-in (the email contains medicine names). The patient adds the contact's email in the profile, ticks the box, and can press "Send a test email".
+- Sent through Brevo's free HTTPS API (Render's free tier blocks SMTP). Setup: `docs/EMAIL_SETUP.md`.
+- One email per patient per minute, at most 8 per day, and a failed email never breaks dose tracking.
+
+### Training the pill model
+See `docs/TRAIN_PILL_MODEL.md`.
+
 ## ⚙️ Installation & Setup
 
 ### 1. Backend Setup

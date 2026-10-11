@@ -85,6 +85,17 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\+?[0-9 ()-]{7,20}$/, 'Enter a valid emergency contact phone number'],
     },
+    emergencyContactEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Enter a valid email address for the emergency contact'],
+    },
+    // The patient agrees that missed-dose emails are sent to the emergency contact.
+    notifyCaregiver: {
+      type: Boolean,
+      default: false,
+    },
     emergencyContactRelation: {
       type: String,
       trim: true,

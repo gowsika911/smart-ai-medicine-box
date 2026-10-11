@@ -227,9 +227,14 @@ function Dashboard() {
               {med.endDate && (
                 <p className="medicine-ends">Course ends {new Date(med.endDate).toLocaleDateString()}</p>
               )}
-              <button className="card-delete" onClick={() => handleDelete(med._id)}>
-                Remove
-              </button>
+              <div className="card-actions">
+                <Link to={`/medicines/${med._id}/edit`} className="card-edit">
+                  Edit
+                </Link>
+                <button className="card-delete" onClick={() => handleDelete(med._id)}>
+                  Remove
+                </button>
+              </div>
             </div>
           ))}
         </div>

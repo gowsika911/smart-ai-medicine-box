@@ -190,15 +190,19 @@ function WebcamCapture() {
       try {
         const predictions = await pillModel.predict(canvas);
         const verdict = interpretPrediction(predictions, medicine?.medicineName || '');
+        const details = predictions
+          .slice(0, 3)
+          .map((p) => `${p.label} ${Math.round(p.confidence * 100)}%`)
+          .join('  |  ');
         if (verdict.status === 'match') {
-          setResult({ matched: true, message: verdict.message });
+          setResult({ matched: true, message: verdict.message, details });
           logDose(selectedMedicineId, 'taken');
         } else if (verdict.status === 'mismatch') {
-          setResult({ matched: false, message: verdict.message });
+          setResult({ matched: false, message: verdict.message, details });
           logDose(selectedMedicineId, 'mismatched');
         } else {
           // unsure / no pill: ask the user to retry, do not record anything
-          setResult({ matched: false, message: verdict.message });
+          setResult({ matched: false, message: verdict.message, details });
         }
         return;
       } catch (err) {
@@ -297,6 +301,7 @@ function WebcamCapture() {
           {result && (
             <div className={`verify-result ${result.matched ? 'verify-success' : 'verify-fail'}`}>
               {result.message}
+              {result.details && <div className="verify-details">AI saw: {result.details}</div>}
             </div>
           )}
 

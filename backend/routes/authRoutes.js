@@ -24,6 +24,8 @@ function userResponse(user) {
     address: user.address || '',
     emergencyContactName: user.emergencyContactName || '',
     emergencyContactPhone: user.emergencyContactPhone || '',
+    emergencyContactEmail: user.emergencyContactEmail || '',
+    notifyCaregiver: Boolean(user.notifyCaregiver),
     emergencyContactRelation: user.emergencyContactRelation || '',
   };
 }
@@ -32,7 +34,7 @@ function userResponse(user) {
 const TEXT_PROFILE_FIELDS = [
   'doctorName', 'prescriptionNotes', 'phone', 'gender', 'bloodGroup',
   'allergies', 'medicalConditions', 'address',
-  'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+  'emergencyContactName', 'emergencyContactPhone', 'emergencyContactEmail', 'emergencyContactRelation',
 ];
 const NUMBER_PROFILE_FIELDS = ['age', 'heightCm', 'weightKg'];
 
@@ -127,6 +129,13 @@ router.put('/profile', protect, async (req, res) => {
     TEXT_PROFILE_FIELDS.forEach((field) => {
       if (req.body[field] !== undefined) user[field] = req.body[field];
     });
+
+    if (req.body.notifyCaregiver !== undefined) {
+      user.notifyCaregiver = req.body.notifyCaregiver === true || req.body.notifyCaregiver === 'true';
+    }
+    if (user.notifyCaregiver && !user.emergencyContactEmail) {
+      return res.status(400).json({ error: 'Add your emergency contact\'s email address to turn on missed-dose emails.' });
+    }
 
     // Numbers: null / '' clears the value, otherwise it must be a valid number.
     for (const field of NUMBER_PROFILE_FIELDS) {

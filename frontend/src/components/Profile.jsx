@@ -22,6 +22,7 @@ const EMPTY_FORM = {
 };
 
 const PHONE_REGEX = /^\+?[0-9 ()-]{7,20}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function bmiInfo(heightCm, weightKg) {
   const h = Number(heightCm);
@@ -41,6 +42,8 @@ function Profile() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
+  const [notifyCaregiver, setNotifyCaregiver] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,6 +64,7 @@ function Profile() {
       const response = await axiosInstance.get('/auth/me');
       const profile = response.data;
       setName(profile.name);
+      setNotifyCaregiver(Boolean(profile.notifyCaregiver));
       setEmail(profile.email);
       setForm({
         age: profile.age ?? '',
@@ -76,6 +80,7 @@ function Profile() {
         prescriptionNotes: profile.prescriptionNotes || '',
         emergencyContactName: profile.emergencyContactName || '',
         emergencyContactPhone: profile.emergencyContactPhone || '',
+        emergencyContactEmail: profile.emergencyContactEmail || '',
         emergencyContactRelation: profile.emergencyContactRelation || '',
       });
     } catch (err) {
@@ -89,6 +94,12 @@ function Profile() {
     if (form.phone && !PHONE_REGEX.test(form.phone)) return 'Enter a valid phone number.';
     if (form.emergencyContactPhone && !PHONE_REGEX.test(form.emergencyContactPhone)) {
       return 'Enter a valid emergency contact phone number.';
+    }
+    if (form.emergencyContactEmail && !EMAIL_REGEX.test(form.emergencyContactEmail)) {
+      return 'Enter a valid email address for the emergency contact.';
+    }
+    if (notifyCaregiver && !form.emergencyContactEmail) {
+      return "Add the emergency contact's email to turn on missed-dose emails.";
     }
     if (form.age !== '' && (Number(form.age) < 0 || Number(form.age) > 130)) {
       return 'Age must be between 0 and 130.';
@@ -118,6 +129,7 @@ function Profile() {
       const toNumberOrNull = (v) => (v === '' ? null : Number(v));
       const response = await axiosInstance.put('/auth/profile', {
         ...form,
+        notifyCaregiver,
         age: toNumberOrNull(form.age),
         heightCm: toNumberOrNull(form.heightCm),
         weightKg: toNumberOrNull(form.weightKg),
@@ -128,6 +140,20 @@ function Profile() {
       setError(err.response?.data?.error || 'Failed to update profile.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendTestEmail = async () => {
+    setError('');
+    setSuccessMsg('');
+    setTesting(true);
+    try {
+      const res = await axiosInstance.post('/notify/test');
+      setSuccessMsg(`Test email sent to ${res.data.to}. Ask them to check the inbox (and spam).`);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not send the test email.');
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -335,6 +361,39 @@ function Profile() {
               />
             </div>
           </div>
+
+          <div className="field-group">
+            <label htmlFor="profile-ec-email">Contact email</label>
+            <input
+              id="profile-ec-email"
+              type="email"
+              value={form.emergencyContactEmail}
+              onChange={setField('emergencyContactEmail')}
+              placeholder="e.g. priya@example.com"
+            />
+          </div>
+
+          <label className="profile-checkbox">
+            <input
+              id="profile-notify"
+              type="checkbox"
+              checked={notifyCaregiver}
+              onChange={(e) => setNotifyCaregiver(e.target.checked)}
+            />
+            <span>
+              Email my emergency contact when I miss a dose. The email lists the medicine names, so
+              only turn this on if you are comfortable sharing them.
+            </span>
+          </label>
+          <button
+            type="button"
+            id="send-test-email"
+            className="btn-secondary"
+            onClick={sendTestEmail}
+            disabled={testing || !form.emergencyContactEmail}
+          >
+            {testing ? 'Sending...' : 'Send a test email (save the profile first)'}
+          </button>
 
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving ? 'Saving...' : 'Save profile'}

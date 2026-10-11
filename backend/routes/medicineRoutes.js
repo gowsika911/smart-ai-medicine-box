@@ -9,6 +9,9 @@ const {
   computeEndDate,
   findActiveDuplicates,
   duplicateMessage,
+  normalizeName,
+  siblingsOf,
+  DOSE_TIME_REGEX,
 } = require('../utils/medicineRules');
 
 // All routes below require login
@@ -134,38 +137,128 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT /api/medicines/:id - update medicine (only if it belongs to user)
+// PUT /api/medicines/:id - edit a medicine (only if it belongs to the user).
+// Name, compartment, pill look and course length are shared by ALL dose times of the
+// same medicine; the dose time itself only changes for the entry being edited.
 router.put('/:id', async (req, res) => {
   try {
-    // Only allow these fields to be edited (prevents changing userId etc.)
-    const allowed = ['medicineName', 'doseTime', 'compartmentNumber', 'pillColor', 'pillShape'];
-    const changes = {};
-    allowed.forEach((key) => {
-      if (req.body[key] !== undefined) changes[key] = req.body[key];
+    const current = await Medicine.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!current) {
+      return res.status(404).json({ error: 'Medicine not found' });
+    }
+
+    const existing = await Medicine.find({ userId: req.user.id }).lean();
+    const group = siblingsOf(existing, current);
+    const groupIds = new Set([String(current._id), ...group.map((m) => String(m._id))]);
+
+    const shared = {};
+    ['medicineName', 'compartmentNumber', 'pillColor', 'pillShape'].forEach((key) => {
+      if (req.body[key] !== undefined) shared[key] = req.body[key];
     });
 
     // Renaming into a medicine that is already active would create a duplicate.
-    if (changes.medicineName) {
-      const existing = await Medicine.find({ userId: req.user.id }).lean();
-      const dupes = findActiveDuplicates(existing, [changes.medicineName], new Date(), req.params.id);
+    if (shared.medicineName && normalizeName(shared.medicineName) !== normalizeName(current.medicineName)) {
+      const others = existing.filter((m) => !groupIds.has(String(m._id)));
+      const dupes = findActiveDuplicates(others, [shared.medicineName]);
       if (dupes.length) {
         return res.status(409).json({ error: duplicateMessage(dupes), duplicates: dupes });
       }
     }
 
-    // Changing the dose time restarts the clock (see Medicine.activeFrom).
-    if (changes.doseTime) changes.activeFrom = new Date();
+    let newDoseTime;
+    if (req.body.doseTime !== undefined) {
+      if (!DOSE_TIME_REGEX.test(req.body.doseTime)) {
+        return res.status(400).json({ error: 'Dose time must look like 08:30.' });
+      }
+      newDoseTime = req.body.doseTime;
+      const clash = group.find(
+        (m) => String(m._id) !== String(current._id) && m.doseTime === newDoseTime
+      );
+      if (clash) {
+        return res.status(409).json({ error: `${current.medicineName} already has a dose at ${newDoseTime}.` });
+      }
+    }
 
-    const updated = await Medicine.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      changes,
-      { new: true, runValidators: true }
-    );
-    if (!updated) {
+    // Course length: blank clears it (ongoing), a number restarts the countdown from today.
+    const unset = {};
+    if (req.body.durationDays !== undefined) {
+      const durationDays = parseDuration(req.body.durationDays);
+      if (durationDays === null) {
+        return res.status(400).json({ error: 'Duration must be a whole number of days between 1 and 365.' });
+      }
+      if (durationDays === undefined) {
+        unset.durationDays = '';
+        unset.endDate = '';
+      } else {
+        shared.durationDays = durationDays;
+        shared.endDate = computeEndDate(durationDays, newDoseTime || current.doseTime);
+      }
+    }
+
+    const update = {};
+    if (Object.keys(shared).length) update.$set = shared;
+    if (Object.keys(unset).length) update.$unset = unset;
+    if (Object.keys(update).length) {
+      await Medicine.updateMany(
+        { _id: { $in: [...groupIds] }, userId: req.user.id },
+        update,
+        { runValidators: true }
+      );
+    }
+
+    if (newDoseTime && newDoseTime !== current.doseTime) {
+      // Changing the dose time restarts the clock (see Medicine.activeFrom).
+      await Medicine.updateOne(
+        { _id: current._id, userId: req.user.id },
+        { $set: { doseTime: newDoseTime, activeFrom: new Date() } },
+        { runValidators: true }
+      );
+    }
+
+    const updated = await Medicine.findOne({ _id: req.params.id, userId: req.user.id });
+    res.json(withCompleted(updated));
+  } catch (err) {
+    if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/medicines/:id/times - add another dose time for an existing medicine
+// (same name, compartment, pill look and course end).
+router.post('/:id/times', async (req, res) => {
+  try {
+    const source = await Medicine.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!source) {
       return res.status(404).json({ error: 'Medicine not found' });
     }
-    res.json(updated);
+    if (!isActive(source)) {
+      return res.status(400).json({ error: 'This course has ended. Add the medicine again as a new one.' });
+    }
+
+    const { doseTime } = req.body;
+    if (!DOSE_TIME_REGEX.test(doseTime || '')) {
+      return res.status(400).json({ error: 'Dose time must look like 08:30.' });
+    }
+
+    const existing = await Medicine.find({ userId: req.user.id }).lean();
+    if (siblingsOf(existing, source).some((m) => m.doseTime === doseTime)) {
+      return res.status(409).json({ error: `${source.medicineName} already has a dose at ${doseTime}.` });
+    }
+
+    const created = await Medicine.create({
+      medicineName: source.medicineName,
+      doseTime,
+      compartmentNumber: source.compartmentNumber,
+      pillColor: source.pillColor,
+      pillShape: source.pillShape,
+      durationDays: source.durationDays,
+      endDate: source.endDate,
+      userId: req.user.id,
+      lastResetDate: todayString(),
+    });
+    res.status(201).json(withCompleted(created));
   } catch (err) {
+    if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });

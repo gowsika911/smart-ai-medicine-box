@@ -19,7 +19,7 @@ function MedicineForm() {
   const navigate = useNavigate();
 
   const [medicineName, setMedicineName] = useState('');
-  const [doseTime, setDoseTime] = useState('08:00');
+  const [doseTimes, setDoseTimes] = useState(['08:00']);
   const [compartmentNumber, setCompartmentNumber] = useState(null);
   const [pillColor, setPillColor] = useState('white');
   const [pillShape, setPillShape] = useState('circle');
@@ -52,12 +52,16 @@ function MedicineForm() {
     setApiError('');
     setSuccessMsg('');
 
-    if (!medicineName || !doseTime || !compartmentNumber) {
+    if (!medicineName || doseTimes.length === 0 || !compartmentNumber) {
       setApiError('Please fill in the name, time, and select a compartment.');
       return;
     }
     if (duplicate) {
       setApiError(`${duplicate.medicineName} is already in your list.`);
+      return;
+    }
+    if (new Set(doseTimes).size !== doseTimes.length) {
+      setApiError('Two dose times are the same. Change or remove one.');
       return;
     }
     if (durationDays !== '' && (!Number.isInteger(Number(durationDays)) || Number(durationDays) < 1 || Number(durationDays) > 365)) {
@@ -67,14 +71,29 @@ function MedicineForm() {
 
     setLoading(true);
     try {
-      await axiosInstance.post('/medicines', {
-        medicineName,
-        doseTime,
-        compartmentNumber,
-        pillColor,
-        pillShape,
-        durationDays: durationDays === '' ? undefined : Number(durationDays),
-      });
+      const course = durationDays === '' ? undefined : Number(durationDays);
+      if (doseTimes.length === 1) {
+        await axiosInstance.post('/medicines', {
+          medicineName,
+          doseTime: doseTimes[0],
+          compartmentNumber,
+          pillColor,
+          pillShape,
+          durationDays: course,
+        });
+      } else {
+        // Same medicine taken at several times a day: one entry per dose time.
+        await axiosInstance.post('/medicines/bulk', {
+          medicines: doseTimes.map((time) => ({
+            medicineName,
+            doseTime: time,
+            compartmentNumber,
+            pillColor,
+            pillShape,
+            durationDays: course,
+          })),
+        });
+      }
 
       setSuccessMsg('Medicine added successfully.');
       setTimeout(() => navigate('/dashboard'), 700);
@@ -120,8 +139,34 @@ function MedicineForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="med-time">Dose time</label>
-              <TimePicker id="med-time" value={doseTime} onChange={setDoseTime} />
+              <label htmlFor="med-time">Dose time{doseTimes.length > 1 ? 's' : ''}</label>
+              {doseTimes.map((time, i) => (
+                <div className="time-row" key={i}>
+                  <TimePicker
+                    id={i === 0 ? 'med-time' : `med-time-${i}`}
+                    value={time}
+                    onChange={(v) => setDoseTimes((prev) => prev.map((t, j) => (j === i ? v : t)))}
+                  />
+                  {doseTimes.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => setDoseTimes((prev) => prev.filter((_, j) => j !== i))}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn-link"
+                id="add-time"
+                onClick={() => setDoseTimes((prev) => [...prev, '21:00'])}
+                disabled={doseTimes.length >= 6}
+              >
+                + Add another time (for medicines taken more than once a day)
+              </button>
             </div>
           </div>
 

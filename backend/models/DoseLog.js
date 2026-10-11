@@ -25,6 +25,9 @@ const doseLogSchema = new mongoose.Schema(
       enum: ['taken', 'missed', 'duplicate', 'mismatched'],
       required: true,
     },
+    caregiverNotifiedAt: {
+      type: Date, // set once a missed-dose email was sent to the emergency contact
+    },
     delayMinutes: {
       type: Number, // how late the dose was taken (0 if on time)
       default: 0,

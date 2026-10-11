@@ -40,10 +40,9 @@ function computeEndDate(durationDays, doseTime, now = new Date()) {
 }
 
 /** Names (from `names`) that already exist as an ACTIVE medicine in `existing`. */
-function findActiveDuplicates(existing, names, now = new Date(), ignoreId = null) {
-  const active = existing.filter(
-    (m) => isActive(m, now) && (!ignoreId || String(m._id) !== String(ignoreId))
-  );
+function findActiveDuplicates(existing, names, now = new Date(), ignoreIds = []) {
+  const ignored = new Set([].concat(ignoreIds || []).map(String));
+  const active = existing.filter((m) => isActive(m, now) && !ignored.has(String(m._id)));
   const taken = new Map(active.map((m) => [normalizeName(m.medicineName), m.medicineName]));
   const dupes = [];
   names.forEach((name) => {
@@ -61,7 +60,17 @@ function duplicateMessage(dupes) {
   );
 }
 
+/** Active entries that are the same medicine as `medicine` (its other dose times). */
+function siblingsOf(existing, medicine, now = new Date()) {
+  const key = normalizeName(medicine.medicineName);
+  return existing.filter((m) => isActive(m, now) && normalizeName(m.medicineName) === key);
+}
+
+const DOSE_TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 module.exports = {
+  siblingsOf,
+  DOSE_TIME_REGEX,
   normalizeName,
   isActive,
   parseDuration,

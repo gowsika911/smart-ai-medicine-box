@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 import MedicineForm from './components/MedicineForm';
+import EditMedicine from './components/EditMedicine';
 import WebcamCapture from './components/WebcamCapture';
 import Alerts from './components/Alerts';
 import Profile from './components/Profile';
@@ -35,6 +36,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/medicines/new" element={<MedicineForm />} />
+              <Route path="/medicines/:id/edit" element={<EditMedicine />} />
               <Route path="/scan" element={<PrescriptionScanner />} />
               <Route path="/assistant" element={<Assistant />} />
               <Route path="/verify" element={<WebcamCapture />} />

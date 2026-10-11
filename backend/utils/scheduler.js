@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Medicine = require('../models/Medicine');
 const DoseLog = require('../models/DoseLog');
 const { localDateString } = require('./dateUtils');
+const { notifyMissedDoses } = require('./caregiverAlerts');
 
 // How many minutes after the scheduled dose time we wait before
 // treating an un-verified dose as missed.
@@ -38,6 +39,8 @@ async function runSchedulerTick() {
     return;
   }
 
+  const missedByUser = new Map(); // patient -> doses missed in this tick (for one email)
+
   for (const medicine of medicines) {
     try {
       // Course finished (endDate passed): no more reminders or missed-dose checks.
@@ -68,7 +71,7 @@ async function runSchedulerTick() {
       const minutesPast = (now - scheduled) / 60000;
 
       if (minutesPast >= MISSED_GRACE_MINUTES) {
-        await DoseLog.create({
+        const log = await DoseLog.create({
           medicineId: medicine._id,
           userId: medicine.userId,
           scheduledTime: medicine.doseTime,
@@ -79,9 +82,27 @@ async function runSchedulerTick() {
 
         medicine.status = 'missed';
         await medicine.save();
+
+        const key = String(medicine.userId);
+        if (!missedByUser.has(key)) missedByUser.set(key, []);
+        missedByUser.get(key).push({
+          logId: log && log._id,
+          medicineName: medicine.medicineName,
+          doseTime: medicine.doseTime,
+          compartmentNumber: medicine.compartmentNumber,
+        });
       }
     } catch (err) {
       console.error(`Scheduler: failed processing medicine ${medicine._id}:`, err.message);
+    }
+  }
+
+  // Tell emergency contacts (only for patients who opted in). Never breaks the scheduler.
+  if (missedByUser.size) {
+    try {
+      await notifyMissedDoses(missedByUser);
+    } catch (err) {
+      console.error('Scheduler: caregiver notification failed:', err.message);
     }
   }
 }
