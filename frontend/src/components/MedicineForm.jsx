@@ -24,6 +24,8 @@ function MedicineForm() {
   const [pillColor, setPillColor] = useState('white');
   const [pillShape, setPillShape] = useState('circle');
   const [durationDays, setDurationDays] = useState('');
+  const [purposeText, setPurposeText] = useState('');
+  const [suggestion, setSuggestion] = useState('');
   const [activeMedicines, setActiveMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -41,6 +43,23 @@ function MedicineForm() {
     };
     load();
   }, []);
+
+  // Ask the server what this medicine is usually for (after a short pause in typing).
+  useEffect(() => {
+    const name = medicineName.trim();
+    if (name.length < 3) return undefined;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axiosInstance.post('/medicines/purposes', { names: [name] });
+        setSuggestion(res.data.purposes[name] || '');
+      } catch {
+        setSuggestion('');
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [medicineName]);
+
+  const shownSuggestion = medicineName.trim().length >= 3 ? suggestion : '';
 
   const normalize = (text) => String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const duplicate = medicineName.trim()
@@ -79,6 +98,7 @@ function MedicineForm() {
           compartmentNumber,
           pillColor,
           pillShape,
+          purpose: purposeText.trim() || undefined,
           durationDays: course,
         });
       } else {
@@ -90,6 +110,7 @@ function MedicineForm() {
             compartmentNumber,
             pillColor,
             pillShape,
+            purpose: purposeText.trim() || undefined,
             durationDays: course,
           })),
         });
@@ -168,6 +189,23 @@ function MedicineForm() {
                 + Add another time (for medicines taken more than once a day)
               </button>
             </div>
+          </div>
+
+          <div className="field-group">
+            <label htmlFor="med-purpose">What is it for? (optional)</label>
+            <input
+              id="med-purpose"
+              type="text"
+              maxLength={100}
+              value={purposeText}
+              onChange={(e) => setPurposeText(e.target.value)}
+              placeholder={shownSuggestion || 'e.g. For blood pressure'}
+            />
+            {shownSuggestion && !purposeText && (
+              <p className="compartment-hint" data-testid="purpose-suggestion">
+                Suggested: {shownSuggestion}. Leave empty to use this, or type your own.
+              </p>
+            )}
           </div>
 
           <div className="field-group">

@@ -850,3 +850,6 @@ button {
 .profile-checkbox input { margin-top: 3px; }
 .verify-details { margin-top: 6px; font-size: 0.78rem; font-weight: 400; opacity: 0.85; }
 #send-test-email { margin: 0 12px 16px 0; }
+
+/* "What is it for?" line */
+.medicine-purpose { margin: 2px 0 6px; font-size: 0.82rem; font-style: italic; color: var(--color-text-muted); line-height: 1.35; }

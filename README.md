@@ -49,6 +49,7 @@ Dashboard card that shows the chance of missing each medicine's **next dose**.
 - **Edit** button on every medicine card: change the name, time, compartment, pill look and course length. Name, compartment, pill look and course length apply to every dose time of that medicine.
 - A medicine taken more than once a day can be added with several times at once ("+ Add another time"), or later from the Edit page.
 - One active medicine per name: the same medicine cannot be added twice until it is removed or its course ends.
+- **"What is it for?" line:** every medicine shows a one-line use under its name (for example "Lowers blood pressure"). It comes from a fixed, hand-written list of about 230 common generic and Indian brand names (`backend/utils/medicineInfo.js`), not from an AI guess, so nothing invented is shown. If the medicine is not in the list the line stays empty and the patient can type their own. A typed line always wins. It is general information, not medical advice.
 
 ### 6. Missed-dose emails to the emergency contact
 - Optional and opt-in (the email contains medicine names). The patient adds the contact's email in the profile, ticks the box, and can press "Send a test email".

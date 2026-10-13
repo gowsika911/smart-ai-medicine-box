@@ -30,6 +30,8 @@ function EditMedicine() {
   const [pillColor, setPillColor] = useState('white');
   const [pillShape, setPillShape] = useState('circle');
   const [durationDays, setDurationDays] = useState('');
+  const [purposeText, setPurposeText] = useState('');
+  const [suggestion, setSuggestion] = useState('');
   const [newTime, setNewTime] = useState('21:00');
 
   const load = async () => {
@@ -54,6 +56,8 @@ function EditMedicine() {
       setPillColor(current.pillColor || 'white');
       setPillShape(current.pillShape || 'circle');
       setDurationDays(current.durationDays ? String(current.durationDays) : '');
+      setPurposeText(current.purposeIsCustom ? current.usedFor : '');
+      setSuggestion(current.purposeIsCustom ? '' : current.usedFor || '');
     } catch (err) {
       setError(err.response?.data?.error || 'Could not load the medicine.');
     }
@@ -86,6 +90,7 @@ function EditMedicine() {
         compartmentNumber: compartment,
         pillColor,
         pillShape,
+        purpose: purposeText.trim(),
         durationDays: durationDays === '' ? '' : Number(durationDays),
       });
       setMessage('Changes saved.');
@@ -164,6 +169,21 @@ function EditMedicine() {
               <p className="compartment-hint">
                 Name, compartment, pill look and course length are shared by all dose times of this medicine.
               </p>
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="edit-purpose">What is it for? (optional)</label>
+              <input
+                id="edit-purpose"
+                type="text"
+                maxLength={100}
+                value={purposeText}
+                onChange={(e) => setPurposeText(e.target.value)}
+                placeholder={suggestion || 'e.g. For blood pressure'}
+              />
+              {suggestion && !purposeText && (
+                <p className="compartment-hint">Showing the usual use: {suggestion}. Type your own to replace it.</p>
+              )}
             </div>
 
             <div className="field-group">

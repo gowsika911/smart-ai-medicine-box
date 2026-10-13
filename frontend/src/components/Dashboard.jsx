@@ -223,6 +223,7 @@ function Dashboard() {
                 <span className={`status-pill ${statusClass(med.status)}`}>{med.status}</span>
               </div>
               <h3>{med.medicineName}</h3>
+              {med.usedFor && <p className="medicine-purpose">{med.usedFor}</p>}
               <p className="medicine-time">Scheduled {med.doseTime}</p>
               {med.endDate && (
                 <p className="medicine-ends">Course ends {new Date(med.endDate).toLocaleDateString()}</p>
@@ -254,6 +255,7 @@ function Dashboard() {
                   <span className="status-pill">completed</span>
                 </div>
                 <h3>{med.medicineName}</h3>
+                {med.usedFor && <p className="medicine-purpose">{med.usedFor}</p>}
                 <p className="medicine-time">Ended {new Date(med.endDate).toLocaleDateString()}</p>
                 <button className="card-delete" onClick={() => handleDelete(med._id)}>
                   Remove

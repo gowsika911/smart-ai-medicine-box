@@ -81,6 +81,8 @@ function buildRows(parsed, activeMedicines) {
         pillColor: 'white',
         pillShape: 'circle',
         durationDays: med.durationDays ? String(med.durationDays) : '',
+        purpose: '',
+        originalName: med.name,
         note: med.note,
         assumed: med.assumed,
         skipReason: med.skipReason,
@@ -96,6 +98,7 @@ function PrescriptionScanner() {
   const fileInputRef = useRef(null);
 
   const [existingMedicines, setExistingMedicines] = useState([]);
+  const [suggestions, setSuggestions] = useState({}); // name -> usual use
   const [previewUrl, setPreviewUrl] = useState('');
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -181,6 +184,13 @@ function PrescriptionScanner() {
         );
       } else {
         setRows(buildRows(parsed, activeMedicines));
+        try {
+          const names = [...new Set(parsed.map((p) => p.name))];
+          const res = await axiosInstance.post('/medicines/purposes', { names });
+          setSuggestions(res.data.purposes || {});
+        } catch {
+          setSuggestions({}); // the suggestions are a bonus; scanning still works without them
+        }
       }
     } catch (err) {
       setError(err.message || 'Scanning failed. Check your internet connection and try again.');
@@ -217,6 +227,7 @@ function PrescriptionScanner() {
           compartmentNumber: Number(r.compartment),
           pillColor: r.pillColor,
           pillShape: r.pillShape,
+          purpose: r.purpose.trim() || undefined,
           durationDays: r.durationDays === '' ? undefined : Number(r.durationDays),
         })),
       });
@@ -357,7 +368,21 @@ function PrescriptionScanner() {
                       </div>
                     </div>
 
+                    <div className="field-group">
+                      <label>What is it for? (optional)</label>
+                      <input
+                        type="text"
+                        maxLength={100}
+                        value={r.purpose}
+                        placeholder={(r.name === r.originalName && suggestions[r.originalName]) || 'e.g. For blood pressure'}
+                        onChange={(e) => updateRow(r.key, { purpose: e.target.value })}
+                      />
+                    </div>
+
                     <div className="scan-tags">
+                      {!r.purpose && r.name === r.originalName && suggestions[r.originalName] && (
+                        <span className="scan-tag" data-testid="scan-purpose">Used for: {suggestions[r.originalName]}</span>
+                      )}
                       {r.note && <span className="scan-tag">{r.note}</span>}
                       {r.assumed && <span className="scan-tag scan-tag-warn">No schedule found, guessed 8:00 AM</span>}
                       {r.skipReason && <span className="scan-tag scan-tag-warn">{r.skipReason}</span>}

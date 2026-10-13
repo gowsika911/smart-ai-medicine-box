@@ -39,6 +39,13 @@ const medicineSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Optional one-line "what is this for?" typed by the user. When empty, the app
+    // shows a suggestion from utils/medicineInfo.js (nothing is stored for that).
+    purpose: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
     // Optional length of the course in days (blank = ongoing until removed).
     durationDays: {
       type: Number,

@@ -296,6 +296,11 @@ function WebcamCapture() {
                 </option>
               ))}
             </select>
+            {medicines.find((m) => m._id === selectedMedicineId)?.usedFor && (
+              <p className="medicine-purpose" data-testid="verify-purpose">
+                {medicines.find((m) => m._id === selectedMedicineId).usedFor}
+              </p>
+            )}
           </div>
 
           {result && (

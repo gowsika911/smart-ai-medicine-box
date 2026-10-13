@@ -3,6 +3,7 @@ const router = express.Router();
 const Medicine = require('../models/Medicine');
 const protect = require('../middleware/authMiddleware');
 const { localDateString } = require('../utils/dateUtils');
+const { lookupPurpose, cleanPurpose } = require('../utils/medicineInfo');
 const {
   isActive,
   parseDuration,
@@ -24,7 +25,13 @@ function todayString() {
 // Adds the `completed` flag the app uses to split active medicines from finished courses.
 function withCompleted(medicine) {
   const plain = typeof medicine.toObject === 'function' ? medicine.toObject() : medicine;
-  return { ...plain, completed: !isActive(plain) };
+  return {
+    ...plain,
+    completed: !isActive(plain),
+    // the line shown next to the medicine: the user's own text, else our suggestion
+    usedFor: plain.purpose || lookupPurpose(plain.medicineName) || '',
+    purposeIsCustom: Boolean(plain.purpose),
+  };
 }
 
 // POST /api/medicines - create a new medicine entry (linked to logged-in user)
@@ -40,6 +47,10 @@ router.post('/', async (req, res) => {
     if (durationDays === null) {
       return res.status(400).json({ error: 'Duration must be a whole number of days between 1 and 365.' });
     }
+    const purpose = cleanPurpose(req.body.purpose);
+    if (purpose === null) {
+      return res.status(400).json({ error: '"Used for" must be 100 characters or fewer.' });
+    }
 
     // The same medicine cannot be added again while it is still active.
     const existing = await Medicine.find({ userId: req.user.id }).lean();
@@ -54,12 +65,13 @@ router.post('/', async (req, res) => {
       compartmentNumber,
       pillColor,
       pillShape,
+      purpose,
       durationDays,
       endDate: computeEndDate(durationDays, doseTime),
       userId: req.user.id,
       lastResetDate: todayString(),
     });
-    res.status(201).json(medicine);
+    res.status(201).json(withCompleted(medicine));
   } catch (err) {
     if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
     res.status(500).json({ error: err.message });
@@ -91,7 +103,12 @@ router.post('/bulk', async (req, res) => {
       if (durationDays === null) {
         return res.status(400).json({ error: `Duration for ${item.medicineName} must be 1 to 365 days.` });
       }
+      const purpose = cleanPurpose(item.purpose);
+      if (purpose === null) {
+        return res.status(400).json({ error: `"Used for" for ${item.medicineName} must be 100 characters or fewer.` });
+      }
       const doc = new Medicine({
+        purpose,
         medicineName: item.medicineName,
         doseTime: item.doseTime,
         compartmentNumber: item.compartmentNumber,
@@ -112,6 +129,17 @@ router.post('/bulk', async (req, res) => {
     if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/medicines/purposes - { names: [...] } -> { purposes: { name: "one line" | "" } }
+// Used by the Add and Scan pages to show what a medicine is for before it is saved.
+router.post('/purposes', (req, res) => {
+  const names = Array.isArray(req.body.names) ? req.body.names.slice(0, 30) : [];
+  const purposes = {};
+  names.forEach((name) => {
+    if (typeof name === 'string') purposes[name] = lookupPurpose(name);
+  });
+  res.json({ purposes });
 });
 
 // GET /api/medicines - fetch only the logged-in user's medicines
@@ -195,6 +223,16 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    // "Used for": blank clears the custom text (the suggestion shows again)
+    if (req.body.purpose !== undefined) {
+      const purpose = cleanPurpose(req.body.purpose);
+      if (purpose === null) {
+        return res.status(400).json({ error: '"Used for" must be 100 characters or fewer.' });
+      }
+      if (purpose === undefined) unset.purpose = '';
+      else shared.purpose = purpose;
+    }
+
     const update = {};
     if (Object.keys(shared).length) update.$set = shared;
     if (Object.keys(unset).length) update.$unset = unset;
@@ -251,6 +289,7 @@ router.post('/:id/times', async (req, res) => {
       compartmentNumber: source.compartmentNumber,
       pillColor: source.pillColor,
       pillShape: source.pillShape,
+      purpose: source.purpose,
       durationDays: source.durationDays,
       endDate: source.endDate,
       userId: req.user.id,
