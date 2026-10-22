@@ -1,0 +1,157 @@
+/* MedBox UI polish layer — visual-only improvements; no API/business logic changes. */
+:root {
+  --color-bg: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-brand: #174c3b;
+  --color-brand-light: #2d8060;
+  --color-accent: #e8b45b;
+  --color-success: #237a50;
+  --color-warning: #9a650b;
+  --color-danger: #b33c36;
+  --color-text: #172b22;
+  --color-text-muted: #66776e;
+  --color-border: #e0e8e2;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --shadow-card: 0 8px 24px rgba(24, 55, 40, .055), 0 1px 3px rgba(24, 55, 40, .04);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: radial-gradient(ellipse at top left, rgba(221, 238, 226, .45), transparent 34rem), var(--color-bg);
+  line-height: 1.55;
+}
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button { transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease; }
+button:active:not(:disabled) { transform: translateY(1px); }
+
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 11px 18px; border-radius: 11px;
+  background: linear-gradient(135deg, #174c3b, #276b50);
+  box-shadow: 0 5px 12px rgba(23, 76, 59, .14);
+  text-decoration: none;
+}
+.btn-primary:hover:not(:disabled) { background: #2d8060; box-shadow: 0 7px 16px rgba(23, 76, 59, .2); }
+.btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; border-radius: 11px; background: #fff; }
+
+/* App navigation */
+.app-shell { min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; align-self: flex-start; height: 100vh; min-height: 600px;
+  flex: 0 0 252px; padding: 28px 18px 18px;
+  background: linear-gradient(165deg, #123d30 0%, #174c3b 58%, #1b5942 100%);
+  box-shadow: 8px 0 28px rgba(20, 55, 40, .07);
+}
+.sidebar-brand { font-size: 1.35rem; letter-spacing: -.04em; margin-bottom: 38px; }
+.sidebar-brand-dot { width: 10px; height: 10px; box-shadow: 0 0 0 5px rgba(232, 180, 91, .13); }
+.sidebar-nav { gap: 6px; }
+.sidebar-link { min-height: 45px; padding: 12px 13px; border: 1px solid transparent; border-radius: 12px; font-size: .91rem; }
+.sidebar-link:hover { background: rgba(255,255,255,.09); }
+.sidebar-link.active { background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.11); box-shadow: inset 3px 0 0 var(--color-accent); }
+.sidebar-footer { margin-top: auto; }
+.sidebar-avatar { box-shadow: 0 0 0 3px rgba(255,255,255,.12); }
+.sidebar-logout { min-height: 40px; border-radius: 10px; }
+.app-content { flex: 1 1 auto; width: 0; max-width: 1440px; padding: 38px clamp(22px, 3.2vw, 52px); }
+
+/* Page headings and surfaces */
+.page-header { align-items: center; margin-bottom: 30px; }
+.page-header h1 { font-size: clamp(1.55rem, 2.2vw, 2rem); letter-spacing: -.045em; line-height: 1.2; }
+.page-subtitle { margin-top: 8px; line-height: 1.6; }
+.medicines-section { margin-top: 30px; }
+.medicines-section h2, .risk-panel h2 { font-size: 1.2rem; letter-spacing: -.025em; }
+.compliance-panel, .card-panel, .empty-state, .risk-panel, .medicine-card, .alert-row {
+  border: 1px solid rgba(219, 230, 221, .85);
+  box-shadow: var(--shadow-card);
+}
+.compliance-panel { gap: clamp(24px, 3vw, 44px); padding: clamp(22px, 3vw, 34px); }
+.compliance-ring { width: 136px; height: 136px; }
+.compliance-score { letter-spacing: -.05em; }
+.compliance-stats { gap: 12px; }
+.stat-tile { padding: 13px 14px; min-height: 76px; justify-content: center; background: #f7faf7; border: 1px solid #edf2ed; border-radius: 13px; }
+.stat-value { font-size: 1.35rem; letter-spacing: -.035em; }
+.stat-label { margin-top: 3px; }
+
+/* Medicine cards */
+.medicine-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 235px), 1fr)); gap: 16px; }
+.medicine-card { position: relative; padding: 20px; border-left-width: 4px; border-radius: 16px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.medicine-card:hover { transform: translateY(-3px); box-shadow: 0 13px 28px rgba(24,55,40,.09); }
+.medicine-card h3 { font-size: 1.08rem; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.compartment-badge { width: 30px; height: 30px; border-radius: 9px; }
+.status-pill { padding: 5px 10px; letter-spacing: .01em; }
+.status-taken { background: #e6f5eb; color: #216b45; }
+.status-missed { background: #fff0ee; color: #a7332e; }
+.status-pending { background: #fff5df; color: #89590b; }
+.medicine-time { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+.card-actions { justify-content: space-between; border-top: 1px solid #edf1ed; padding-top: 14px; margin-top: 12px; }
+.card-edit, .card-delete { min-height: 32px; display: inline-flex; align-items: center; }
+.card-edit { padding: 4px 8px; border-radius: 7px; }
+.card-edit:hover { background: #edf5ef; text-decoration: none; }
+.card-delete { padding: 4px 8px; border-radius: 7px; }
+.card-delete:hover { background: #fff0ee; }
+.empty-state { padding: 38px 24px; border: 1px dashed #cbd9ce; background: rgba(255,255,255,.8); }
+
+/* Prediction and alert content */
+.risk-panel { margin: 0 0 28px; padding: 22px 24px; background: #fff; border-radius: var(--radius-lg); }
+.risk-panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.risk-model-badge { border-radius: 999px; padding: 5px 10px; background: #edf5ef; color: #276548; font-size: .76rem; font-weight: 650; }
+.risk-row { padding: 15px 0; border-bottom: 1px solid #edf1ed; }
+.risk-row:last-child { border-bottom: 0; }
+.risk-bar { height: 8px; border-radius: 999px; background: #edf1ed; overflow: hidden; }
+.risk-bar-fill { height: 100%; border-radius: inherit; }
+.alert-row { border-radius: 14px; }
+
+/* Forms, inputs and camera */
+.card-panel { padding: clamp(20px, 3vw, 32px); border-radius: var(--radius-lg); }
+.field-group input, .field-group select, .chat-form input, textarea {
+  min-height: 44px; border-radius: 11px; border-color: #d8e3da;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.field-group input:focus, .field-group select:focus, .chat-form input:focus, textarea:focus {
+  border-color: #2d8060; box-shadow: 0 0 0 4px rgba(45,128,96,.12); outline: none;
+}
+.field-group label { margin-bottom: 8px; }
+.camera-frame { border: 1px solid #dce6de; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+.verify-result { border-radius: 12px; padding: 14px 16px; }
+
+/* Login / signup */
+.auth-brand-panel { background: radial-gradient(circle at 15% 20%, rgba(80,145,106,.4), transparent 25rem), linear-gradient(145deg, #123d30, #1b5a42); }
+.brand-title { letter-spacing: -.045em; line-height: 1.15; }
+.auth-form-wrap { max-width: 410px; }
+.auth-form-header h2 { letter-spacing: -.035em; }
+
+/* Keyboard accessibility and motion */
+:focus-visible { outline: 3px solid rgba(45,128,96,.65); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+@media (max-width: 900px) {
+  .app-shell { display: block; }
+  .sidebar { position: static; height: auto; min-height: 0; padding: 15px 18px 12px; }
+  .sidebar-brand { margin: 0 0 13px; }
+  .sidebar-nav { display: flex; flex-direction: row; gap: 7px; margin: 0; overflow-x: auto; padding: 2px 1px 7px; scrollbar-width: thin; }
+  .sidebar-link { flex: 0 0 auto; min-height: 40px; white-space: nowrap; padding: 9px 12px; }
+  .sidebar-footer { display: none; }
+  .app-content { width: 100%; max-width: none; padding: 26px 22px 40px; }
+}
+@media (max-width: 600px) {
+  .app-content { padding: 22px 15px 32px; }
+  .page-header { align-items: stretch; flex-direction: column; gap: 16px; margin-bottom: 22px; }
+  .page-header .btn-primary { width: 100%; }
+  .compliance-panel { justify-content: center; gap: 18px; padding: 22px 16px; }
+  .compliance-details { width: 100%; min-width: 0; }
+  .compliance-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .stat-tile { padding: 12px; }
+  .medicine-grid { grid-template-columns: 1fr; gap: 12px; }
+  .risk-panel { padding: 18px 15px; }
+  .risk-row-top { gap: 8px; align-items: flex-start; flex-direction: column; }
+  .field-row { flex-direction: column; gap: 0; }
+  .chat-form { align-items: stretch; }
+  .alert-row { align-items: flex-start; padding: 13px; gap: 10px; }
+  .alert-time { white-space: normal; }
+  .auth-brand-panel { padding: 30px 24px; }
+  .auth-form-panel { padding: 28px 22px; }
+}

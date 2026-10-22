@@ -1,0 +1,5 @@
+[33m249bc93[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Added medicine uses
+[33m645579c[m Edit medicine, multiple times, caregiver email
+[33m7e7cef0[m Block duplicate active medicines, course duration
+[33m739a910[m Fix late-added medicine marked missed, scanner duplicates
+[33m6814d91[m Add health assistant chatbot and AI pill recognition
